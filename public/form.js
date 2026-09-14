@@ -13,7 +13,6 @@
     state: $('state'), city: $('city'), cityList: $('city-list'),
     previewType: $('preview_type'), submit: $('submit-btn'), formError: $('form-error'),
     success: $('m12-success'), successText: $('success-text'),
-    waiting: $('m12-waiting'), waitingText: $('waiting-text'), waitingSlow: $('waiting-slow'), waitingContinue: $('waiting-continue'),
     companyField: $('company-field'), companyOptional: $('company-optional'), companyHelp: $('company-help'),
     context: $('m12-context'), contextText: $('context-text'), contextChange: $('context-change'),
     chooser: $('context-chooser'), options: $('context-options'), confirm: $('context-confirm'), cancel: $('context-cancel'),
@@ -418,64 +417,15 @@
       window.parent.postMessage({ type: 'mindful12:submitted', id: body.id, matched_company: body.matched_company }, '*');
     }
     form.hidden = true;
-    // GHL creates the contact and sends back a private link; show a loading screen and poll for it.
-    if (body.wait && body.token && els.waiting) return waitForPrivateLink(body);
-    finish(body.redirect_url);
-  }
-
-  /** Redirect the whole page (not just the iframe) if we have somewhere to go; otherwise show the thank-you card. */
-  function finish(redirect) {
+    // The server picked the destination: the company's invite link, or the per-preview-type fallback.
+    var redirect = body.redirect_url;
     if (redirect && /^https?:\/\//i.test(redirect)) {
       try { window.top.location.href = redirect; } catch (e) { window.location.href = redirect; }
       return;
     }
     if (params.get('success')) els.successText.textContent = params.get('success');
-    if (els.waiting) els.waiting.hidden = true;
     els.success.hidden = false;
     postHeight();
-  }
-
-  var WAIT_POLL_MS = 2000, WAIT_MAX_MS = 3 * 60 * 1000, WAIT_SLOW_MS = 20 * 1000;
-
-  function waitForPrivateLink(body) {
-    var started = Date.now(), stopped = false;
-    els.waiting.hidden = false;
-    els.waitingSlow.hidden = true;
-    postHeight();
-
-    function stop() { stopped = true; }
-    function giveUp() {
-      stop();
-      // Nothing came back in time. Fall back to the configured redirect, or tell them what happens next.
-      if (body.redirect_url) return finish(body.redirect_url);
-      els.waitingText.textContent = 'This is taking longer than expected.';
-      els.waitingSlow.hidden = false;
-      els.waitingContinue.hidden = true;
-      postHeight();
-    }
-
-    els.waitingContinue.onclick = function () { stop(); finish(body.redirect_url); };
-
-    function poll() {
-      if (stopped) return;
-      fetch('/api/submissions/' + body.id + '/status?token=' + encodeURIComponent(body.token), { cache: 'no-store' })
-        .then(function (r) { return r.json(); })
-        .then(function (s) {
-          if (stopped) return;
-          if (s.status === 'ready' && s.redirect_url) { stop(); return finish(s.redirect_url); }
-          if (s.status === 'unavailable') return giveUp();
-          var elapsed = Date.now() - started;
-          if (elapsed >= WAIT_MAX_MS) return giveUp();
-          if (elapsed >= WAIT_SLOW_MS) {
-            els.waitingText.textContent = 'Almost there — setting up your private space…';
-            els.waitingContinue.hidden = !body.redirect_url;
-            postHeight();
-          }
-          setTimeout(poll, WAIT_POLL_MS);
-        })
-        .catch(function () { if (!stopped) setTimeout(poll, WAIT_POLL_MS * 2); });
-    }
-    setTimeout(poll, WAIT_POLL_MS);
   }
 
   // ---------- Utilities ----------

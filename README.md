@@ -20,10 +20,10 @@ Railway service for Mindful12: an embeddable intake form (stored in Postgres, fo
    | `GHL_LOCATION_ID` | GHL sub-account (location) ID |
    | `GHL_PIT_TOKEN` | GHL Private Integration Token |
    | `ALLOWED_HOSTS` | Hosts allowed to embed the form / be redirect targets (default `mindful12.mycoursecreator360.com, mindful12.com, *.mindful12.com`) |
-   | `GHL_CALLBACK_SECRET` | Random string; GHL's workflow webhook sends it as `X-Callback-Secret` when posting the private link back |
-   | `GHL_PRIVATE_LINK_FIELD_ID` | Custom field id holding the private group URL (default `ZVPibuKKScCRcqDQWFFL`) |
-   | `REDIRECT_URL` | Where to send people after submitting. Placeholders `{id}`, `{email}`, `{preview_type}`, `{company_id}` are filled per submission, e.g. `https://funnel.page/next?sid={id}&preview_type={preview_type}`. Blank = built-in thank-you card |
-   | `ADMIN_API_KEY` | any long random string — enables the admin endpoints (optional) |
+   | `REDIRECT_URL_INDEPENDENT`, `REDIRECT_URL_HR`, `REDIRECT_URL_EXECUTIVE`, `REDIRECT_URL_EMPLOYEE` | Where people with **no registered company** go after submitting, per preview type |
+   | `REDIRECT_URL` | Generic fallback if the per-type one is blank. All redirect vars accept `{id}`, `{email}`, `{preview_type}`, `{company_id}` |
+   | `ADMIN_PASSWORD` | Password for the admin panel at `/admin` |
+   | `ADMIN_API_KEY` | Optional — lets scripts hit the admin API with an `X-Admin-Key` header |
 
 2. Deploy (push to `main`). On first boot the app creates the tables and seeds the two registered companies.
 3. Add a public domain to the service (Settings → Networking). That domain is `YOUR-APP` below.
@@ -87,23 +87,30 @@ Messages and options live in `PREVIEW_TYPES` at the top of `public/form.js`; the
 4. **Submit gate** — if a suggestion is pending, submit is blocked until they choose Yes or No.
 5. **Server is the final authority** — on submit the server re-runs the matcher and records `matched_company_id`, `match_method` (`selected` | `name` | `domain` | `none`) and `match_confidence`, so borderline cases can be reviewed later.
 
-## After submit: the private-link handshake
+## After submit: where people go
 
-1. Form submits → row stored → webhook to GHL (`GHL_WEBHOOK_URL`) with `submission_id`, email, etc.
-2. The visitor sees a **loading screen** ("Creating your account…") and the form polls `GET /api/submissions/:id/status?token=…` every 2 s (the token is random per submission, so links can't be enumerated).
-3. GHL creates the contact and, once the custom field **`private_channel_link`** (`ZVPibuKKScCRcqDQWFFL`) is set, a workflow **Webhook action** POSTs to `https://YOUR-APP/api/ghl/callback` with header `X-Callback-Secret: <GHL_CALLBACK_SECRET>`. Recommended custom data on that action:
-   - `email` = `{{contact.email}}`
-   - `private_channel_link` = `{{contact.private_channel_link}}`
-   - `submission_id` = `{{contact.submission_id}}` (only if you add that custom field and map it from the inbound webhook — otherwise matching falls back to the newest pending submission for the email in the last 2 days)
-4. The status endpoint flips to `ready` and the **whole page** redirects to the private link.
-5. If nothing arrives in 3 minutes (or the outbound webhook failed), the form falls back to `REDIRECT_URL` if set, else shows "taking longer than expected — you'll also receive your link by email".
+Decided server-side, in this order:
 
-`curl` test of the callback:
+1. **Matched a registered company with an Invite Link** → that link (e.g. `https://login.mindful12.com/communities/groups/baystate-benefit-services/private-group?invite=invite`).
+2. `?redirect=` on the embed URL, if it points at an allowed host.
+3. `REDIRECT_URL_<PREVIEW_TYPE>` — e.g. `REDIRECT_URL_INDEPENDENT`, `REDIRECT_URL_HR`.
+4. `REDIRECT_URL`.
+5. Nothing configured → built-in thank-you card.
 
-```bash
-curl -X POST https://YOUR-APP/api/ghl/callback -H "X-Callback-Secret: $GHL_CALLBACK_SECRET" -H "Content-Type: application/json" \
-  -d '{"email":"jane@baystatebenefits.com","private_channel_link":"https://login.mindful12.com/communities/groups/baystate-benefit-services/private-group?invite=invite"}'
+The chosen URL is stored on the submission (`redirect_url`) and included in the GHL webhook payload. The whole page (not just the iframe) is redirected.
+
+## Admin panel
+
+`https://YOUR-APP/admin` — password from `ADMIN_PASSWORD`. Edit registered companies inline (name, domain, website, **invite link**, passcode, active), add new ones, delete. Sessions are signed tokens valid for 12 h; login is rate-limited (10 tries / 15 min per IP).
+
+Embed it on a page like `mindful12.com/admin` with:
+
+```html
+<div class="mindful12-form" data-page="admin"></div>
+<script src="https://YOUR-APP/embed.js"></script>
 ```
+
+`passcode` is stored and editable but not used by the form yet.
 
 ## Security notes
 
@@ -112,14 +119,15 @@ curl -X POST https://YOUR-APP/api/ghl/callback -H "X-Callback-Secret: $GHL_CALLB
 - All DB access is parameterized; user input is never rendered as HTML; secrets stay in Railway env vars and never reach the browser.
 - `trust proxy` is set to one hop so `req.ip` can't be spoofed with `X-Forwarded-For`.
 - The embed shows a "taking longer than usual" message if the app doesn't respond within 10s.
-- `GET /api/companies` is intentionally public (the dropdown needs it) — it reveals registered company names and domains.
+- `GET /api/companies` is intentionally public (the dropdown needs it) — it returns names, domains and websites only; invite links and passcodes are only readable through the authenticated admin API.
+- Admin sessions are HMAC-signed tokens derived from `ADMIN_PASSWORD` (changing the password invalidates them); login attempts are rate-limited.
 
 ## Database
 
-**`registered_companies`** — `id, name, domain, website, active, created_at, updated_at`
+**`registered_companies`** — `id, name, domain, website, invite_link, passcode, active, created_at, updated_at`
 Seeded with Baystate Benefit Services (`baystatebenefits.com`) and Central Boston Elder Services (`centralboston.org`).
 
-**`form_submissions`** — every submission: `company_name` (as typed; null if left blank), `matched_company_id/name`, `match_method`, `match_confidence`, `email`, `email_domain`, `full_name`, `phone`, `city`, `state`, `preview_type`, `url_params` (jsonb), `page_url`, `ip`, `user_agent`, `ghl_webhook_status` (`sent` | `failed` | `skipped`), `ghl_webhook_response`, `created_at`.
+**`form_submissions`** — every submission: `company_name` (as typed; null if left blank), `matched_company_id/name`, `match_method`, `match_confidence`, `email`, `email_domain`, `full_name`, `phone`, `city`, `state`, `preview_type`, `url_params` (jsonb), `page_url`, `redirect_url`, `ip`, `user_agent`, `ghl_webhook_status` (`sent` | `failed` | `skipped`), `ghl_webhook_response`, `created_at`.
 
 ## API
 
@@ -129,18 +137,11 @@ Seeded with Baystate Benefit Services (`baystatebenefits.com`) and Central Bosto
 | `GET` | `/api/companies` | Registered companies (for the dropdown) |
 | `GET` | `/api/locations/states` | US states/territories |
 | `GET` | `/api/locations/cities?state=MA` | Cities for a state |
-| `POST` | `/api/submissions` | Store submission + fire GHL webhook; returns `id`, `token`, `wait` |
-| `GET` | `/api/submissions/:id/status?token=` | `pending` \| `ready` (+ `redirect_url`) \| `unavailable` |
-| `POST` | `/api/ghl/callback` | GHL posts the contact's `private_channel_link` here — header `X-Callback-Secret` |
-| `POST` | `/api/companies` | Add a registered company — `{name, domain, website}` — header `X-Admin-Key` |
-| `GET` | `/api/submissions?limit=100&offset=0` | List submissions — header `X-Admin-Key` |
-
-Add a company:
-
-```bash
-curl -X POST https://YOUR-APP/api/companies -H "X-Admin-Key: $ADMIN_API_KEY" -H "Content-Type: application/json" \
-  -d '{"name":"Example Co","domain":"example.com","website":"https://example.com"}'
-```
+| `POST` | `/api/submissions` | Store submission + fire GHL webhook; returns `id`, `matched_company`, `redirect_url` |
+| `POST` | `/api/admin/login` | `{password}` → `{token}` (12 h) |
+| `GET/POST` | `/api/admin/companies` | List / add — `Authorization: Bearer <token>` or `X-Admin-Key` |
+| `PUT/DELETE` | `/api/admin/companies/:id` | Update / delete |
+| `GET` | `/api/admin/submissions?limit=100&offset=0` | List submissions |
 
 ### GHL webhook payload
 

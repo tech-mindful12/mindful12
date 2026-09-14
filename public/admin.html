@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Mindful12 Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body class="bg-transparent">
+  <main class="m12 m12--admin">
+
+    <!-- Sign in -->
+    <section class="ad-login" id="ad-login">
+      <form id="login-form" class="ad-login-card" novalidate>
+        <h1>Registered Companies</h1>
+        <p class="ad-muted">Enter the admin password to continue.</p>
+        <div class="m12-field">
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" required>
+          <div class="m12-error" id="login-error"></div>
+        </div>
+        <button type="submit" class="m12-btn" id="login-btn"><span>Sign in</span></button>
+      </form>
+    </section>
+
+    <!-- Panel -->
+    <section class="ad-panel" id="ad-panel" hidden>
+      <header class="ad-head">
+        <div>
+          <h1>Registered Companies</h1>
+          <p class="ad-muted">People who match a company here are sent to its invite link after signing up.</p>
+        </div>
+        <div class="ad-head-actions">
+          <button type="button" class="ad-btn ad-btn--primary" id="add-btn">+ Add company</button>
+          <button type="button" class="ad-btn ad-btn--ghost" id="logout-btn">Sign out</button>
+        </div>
+      </header>
+
+      <div class="ad-flash" id="ad-flash" hidden></div>
+
+      <div class="ad-table-wrap">
+        <table class="ad-table" id="ad-table">
+          <thead>
+            <tr>
+              <th>Company name</th>
+              <th>Domain</th>
+              <th>Website</th>
+              <th>Invite link</th>
+              <th>Passcode</th>
+              <th>Active</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="ad-rows"></tbody>
+        </table>
+      </div>
+      <p class="ad-muted ad-empty" id="ad-empty" hidden>No companies yet — add the first one.</p>
+    </section>
+
+  </main>
+
+  <!-- Row template: view mode + edit mode share one <tr>; fields are enabled in edit mode -->
+  <template id="row-template">
+    <tr class="ad-row">
+      <td data-col="name"><input type="text" name="name" placeholder="Company name" disabled></td>
+      <td data-col="domain"><input type="text" name="domain" placeholder="example.com" disabled></td>
+      <td data-col="website"><input type="url" name="website" placeholder="https://" disabled></td>
+      <td data-col="invite_link"><input type="url" name="invite_link" placeholder="https://login.mindful12.com/…" disabled></td>
+      <td data-col="passcode"><input type="text" name="passcode" placeholder="—" disabled autocomplete="off"></td>
+      <td data-col="active" class="ad-center"><input type="checkbox" name="active" disabled></td>
+      <td class="ad-actions">
+        <button type="button" class="ad-link" data-act="edit">Edit</button>
+        <button type="button" class="ad-link" data-act="save" hidden>Save</button>
+        <button type="button" class="ad-link ad-link--muted" data-act="cancel" hidden>Cancel</button>
+        <button type="button" class="ad-link ad-link--danger" data-act="delete">Delete</button>
+      </td>
+    </tr>
+  </template>
+
+  <script src="admin.js"></script>
+</body>
+</html>
