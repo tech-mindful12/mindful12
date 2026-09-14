@@ -45,7 +45,9 @@ For the full **HR Preview walkthrough** (7 steps ending in the form) add `data-p
 <script src="https://YOUR-APP/embed.js"></script>
 ```
 
-That loads `public/preview.html` (steps in the HTML, styling in `flow.css`, Continue/Back in `flow.js`; Playfair Display headings, Inter body). The form is initialized on page load, so URL params apply even though it's only revealed on step 7; `?step=7` jumps straight to it.
+That loads `public/preview.html` (steps in the HTML, styling in `flow.css`, Continue/Back in `flow.js`; Playfair Display headings, Inter body). The form is initialized on page load, so URL params apply even though it's only revealed on the last step; `?step=form` jumps straight to it.
+
+The walkthrough adapts to `preview_type`: the HTML holds the HR version and `COPY` at the top of `flow.js` holds what differs — welcome copy, the pricing lead-in, and the "You're Ready to Begin" rows. Step 5 ("Why HR Leaders Start Here") is HR-only; step 6 ("Simple To Begin") is skipped for `independent`. Use one snippet per funnel page with the matching `data-preview-type`.
 
 `embed.js` renders the form in an auto-resizing iframe. Every `data-*` attribute becomes a form URL parameter, and **query parameters on the funnel page URL are forwarded too** (and win over `data-*`), so `https://funnel.page/preview?preview_type=video` sets the hidden Preview Type without touching the page.
 
@@ -57,7 +59,7 @@ You can also iframe `https://YOUR-APP/?preview_type=...` directly. `https://YOUR
 
 | Param | Effect |
 |---|---|
-| `step` | `preview.html` only — open on this step (1–7) |
+| `step` | `preview.html` only — open on this step number, or `form` for the last one |
 | `preview_type` | `executive` \| `employee` \| `hr` \| `independent` (default `independent`). Hidden field, stored + sent to GHL; see below |
 | `company`, `email`, `name`, `phone`, `city`, `state` | Prefill (state accepts `MA` or `Massachusetts`) |
 | `bg` | `transparent` (default — the funnel page's background shows through), `white`, `wave` (branded background image) |
