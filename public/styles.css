@@ -26,6 +26,7 @@ body.bg-wave {
   background: #F4F6FC url('assets/bg.jpg') center / cover no-repeat fixed;
 }
 body.bg-transparent { background: transparent; }
+body.bg-transparent .m12-card { background: transparent; }
 html.embedded body { min-height: 0; }
 
 .m12 {
@@ -39,8 +40,7 @@ html.embedded body { min-height: 0; }
   border-radius: var(--m12-radius);
   padding: 32px 28px;
 }
-body.bg-wave .m12-card,
-body.bg-transparent .m12-card {
+body.bg-wave .m12-card {
   box-shadow: 0 10px 40px rgba(13, 33, 88, 0.08), 0 1px 3px rgba(13, 33, 88, 0.06);
 }
 

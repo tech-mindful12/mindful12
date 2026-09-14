@@ -20,6 +20,7 @@
   margin: 0 0 14px;
   color: var(--m12-text);
 }
+.lp-h1:focus { outline: none; }
 .lp-h1 em { font-style: italic; font-weight: 500; }
 .lp-accent { color: var(--m12-accent); }
 
