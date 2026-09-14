@@ -434,7 +434,7 @@
     try { window.top.location.href = url; } catch (e) { window.location.href = url; }
   }
 
-  var REDIRECT_DELAY_S = 8;
+  var REDIRECT_DELAY_S = 30;
 
   /**
    * The destination asks them to create a login (name, email, password). Explain that first so
