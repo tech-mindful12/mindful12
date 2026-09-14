@@ -58,7 +58,7 @@ You can also iframe `https://YOUR-APP/?preview_type=...` directly. `https://YOUR
 | `step` | `preview.html` only — open on this step (1–7) |
 | `preview_type` | `executive` \| `employee` \| `hr` \| `independent` (default `independent`). Hidden field, stored + sent to GHL; see below |
 | `company`, `email`, `name`, `phone`, `city`, `state` | Prefill (state accepts `MA` or `Massachusetts`) |
-| `bg` | `white` (default), `wave` (branded background image), `transparent` |
+| `bg` | `transparent` (default — the funnel page's background shows through), `white`, `wave` (branded background image) |
 | `button` | Override the button label (default "Create My Account") |
 | `success` | Override the thank-you text (only shown when no redirect is configured) |
 | `redirect` | Override `REDIRECT_URL` for this embed — only honoured for hosts in `ALLOWED_HOSTS` (the *top* window is redirected) |

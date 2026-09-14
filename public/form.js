@@ -27,7 +27,7 @@
   // ---------- URL parameters ----------
   // ?preview_type=...  hidden field
   // ?company= ?email= ?name= (or full_name) ?phone= ?city= ?state=   prefill
-  // ?bg=white|wave|transparent   ?button=   ?redirect= (overrides the REDIRECT_URL server variable)
+  // ?bg=transparent (default)|white|wave   ?button=   ?redirect= (overrides the REDIRECT_URL server variable)
 
   // ---------- Preview type ----------
   // Drives the message above the form and whether Company Name is required.
@@ -89,7 +89,7 @@
 
   els.previewType.value = normalizePreviewType(params.get('preview_type') || params.get('previewType'));
 
-  var bg = (params.get('bg') || 'white').toLowerCase();
+  var bg = (params.get('bg') || 'transparent').toLowerCase(); // the host page supplies the background
   document.body.className = 'bg-' + (['white', 'wave', 'transparent'].indexOf(bg) !== -1 ? bg : 'white');
 
   if (params.get('button')) els.submit.querySelector('span').textContent = params.get('button');

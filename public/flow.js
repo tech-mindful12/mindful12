@@ -8,12 +8,14 @@
   var params = new URLSearchParams(window.location.search);
   var current = Math.min(Math.max(parseInt(params.get('step'), 10) || 1, 1), steps.length); // ?step=7 jumps straight to the form
 
-  function show(n) {
+  function show(n, initial) {
     current = n;
     steps.forEach(function (s, i) { s.classList.toggle('is-active', i + 1 === n); });
+    if (initial) return;
     // Scroll the step into view — top of the iframe when embedded, top of the page otherwise.
     if (window.parent !== window) window.parent.postMessage({ type: 'mindful12:scroll' }, '*');
     else window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Move focus to the new heading for screen readers (the visible ring is suppressed in flow.css).
     var focusTarget = steps[n - 1].querySelector('h1, h2');
     if (focusTarget) { focusTarget.setAttribute('tabindex', '-1'); focusTarget.focus({ preventScroll: true }); }
   }
@@ -25,5 +27,5 @@
     else if (back && current > 1) show(current - 1);
   });
 
-  show(current);
+  show(current, true);
 })();
