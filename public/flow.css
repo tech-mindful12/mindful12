@@ -46,8 +46,10 @@
 .lp-closer { font-weight: 700; font-size: 16px; color: var(--m12-text); margin: 18px 0 0; }
 
 /* Icon rows: icon at H1 size, label at H2 size */
-.lp-rows { display: flex; flex-direction: column; gap: 22px; margin: 10px 0 8px; }
-.lp-item { display: flex; align-items: center; gap: 22px; }
+.lp-rows { display: flex; flex-direction: column; margin: 10px 0 8px; }
+.lp-item { display: flex; align-items: center; gap: 22px; padding: 18px 0; border-top: 2px solid #CBD5E0; }
+.lp-item:first-child { border-top: 0; padding-top: 0; }
+.lp-item:last-child { padding-bottom: 0; }
 .lp-chip {
   flex: none; width: 1.1em; font-size: var(--lp-h1);
   display: flex; align-items: center; justify-content: center;
