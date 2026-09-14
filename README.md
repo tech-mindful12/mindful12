@@ -83,7 +83,7 @@ Messages and options live in `PREVIEW_TYPES` at the top of `public/form.js`; the
 
 ## How company matching works
 
-1. **Dropdown** — the Company Name field autocompletes from `registered_companies`.
+1. **Dropdown** — the Company Name field autocompletes from `registered_companies` via `GET /api/companies/lookup` once 3+ characters are typed. The browser never receives the list — only up to 3 close matches (names + ids) for what was typed, so registered companies can't be browsed.
 2. **"Did you mean…?"** — if what they typed is a variation of a registered name (typo, missing "Services", acronym like `CBES`, "Bay State" vs "Baystate"), they're asked to confirm. Exact/near-exact matches attach silently.
 3. **Email domain check** — if the email is on a company domain (not gmail/yahoo/etc.) that matches a registered company's domain, they're asked to confirm that company. If nothing was typed yet, it's filled in.
 4. **Submit gate** — if a suggestion is pending, submit is blocked until they choose Yes or No.
@@ -121,7 +121,7 @@ Embed it on a page like `mindful12.com/admin` with:
 - All DB access is parameterized; user input is never rendered as HTML; secrets stay in Railway env vars and never reach the browser.
 - `trust proxy` is set to one hop so `req.ip` can't be spoofed with `X-Forwarded-For`.
 - The embed shows a "taking longer than usual" message if the app doesn't respond within 10s.
-- `GET /api/companies` is intentionally public (the dropdown needs it) — it returns names, domains and websites only; invite links and passcodes are only readable through the authenticated admin API.
+- The registered-company list is never sent to the browser; `GET /api/companies/lookup` answers only for 3+ typed characters with at most 3 names, rate-limited. Invite links, passcodes, domains and websites are only readable through the authenticated admin API.
 - Admin sessions are HMAC-signed tokens derived from `ADMIN_PASSWORD` (changing the password invalidates them); login attempts are rate-limited.
 
 ## Database
@@ -136,7 +136,7 @@ Seeded with Baystate Benefit Services (`baystatebenefits.com`) and Central Bosto
 | Method | Path | Notes |
 |---|---|---|
 | `GET` | `/health` | DB + config status |
-| `GET` | `/api/companies` | Registered companies (for the dropdown) |
+| `GET` | `/api/companies/lookup?q=&email=` | Up to 3 name matches for `q` (3+ chars) + email-domain match; names/ids only |
 | `GET` | `/api/locations/states` | US states/territories |
 | `GET` | `/api/locations/cities?state=MA` | Cities for a state |
 | `POST` | `/api/submissions` | Store submission + fire GHL webhook; returns `id`, `matched_company`, `redirect_url` |
