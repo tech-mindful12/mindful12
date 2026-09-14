@@ -53,9 +53,11 @@
 
   function applyPreviewType(type) {
     els.previewType.value = type;
-    els.contextText.textContent = PREVIEW_TYPES[type].message;
-    els.context.hidden = false;
-    els.chooser.hidden = true;
+    if (els.context) { // the message + chooser markup may be commented out
+      els.contextText.textContent = PREVIEW_TYPES[type].message;
+      els.context.hidden = false;
+      els.chooser.hidden = true;
+    }
     // Independent visitors may not have a company; everyone else must give one.
     els.companyOptional.hidden = companyRequired();
     els.companyHelp.hidden = companyRequired();
@@ -80,12 +82,14 @@
     postHeight();
   }
 
-  els.contextChange.addEventListener('click', openChooser);
-  els.cancel.addEventListener('click', function () { els.chooser.hidden = true; postHeight(); });
-  els.confirm.addEventListener('click', function () {
-    var picked = els.options.querySelector('input:checked');
-    if (picked) applyPreviewType(picked.value);
-  });
+  if (els.context) {
+    els.contextChange.addEventListener('click', openChooser);
+    els.cancel.addEventListener('click', function () { els.chooser.hidden = true; postHeight(); });
+    els.confirm.addEventListener('click', function () {
+      var picked = els.options.querySelector('input:checked');
+      if (picked) applyPreviewType(picked.value);
+    });
+  }
 
   els.previewType.value = normalizePreviewType(params.get('preview_type') || params.get('previewType'));
 

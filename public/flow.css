@@ -4,6 +4,7 @@
   --m12-serif: 'Playfair Display', Georgia, 'Times New Roman', serif;
 }
 
+:root { --lp-h1: 72px; --lp-h2: 32px; }
 .m12--flow { max-width: 915px; margin: 0; padding: 32px 20px 48px; text-align: left; }
 
 .lp-step { display: none; }
@@ -14,7 +15,7 @@
 .lp-h1 {
   font-family: var(--m12-serif);
   font-weight: 600;
-  font-size: 72px;
+  font-size: var(--lp-h1);
   line-height: 1.08;
   letter-spacing: -0.015em;
   margin: 0 0 18px;
@@ -44,18 +45,19 @@
 .lp-hl { color: var(--m12-accent); font-weight: 600; }
 .lp-closer { font-weight: 700; font-size: 16px; color: var(--m12-text); margin: 18px 0 0; }
 
-.lp-rows { display: flex; flex-direction: column; gap: 12px; margin: 6px 0 4px; }
-.lp-item { display: flex; align-items: flex-start; gap: 14px; }
+/* Icon rows: icon at H1 size, label at H2 size */
+.lp-rows { display: flex; flex-direction: column; gap: 22px; margin: 10px 0 8px; }
+.lp-item { display: flex; align-items: center; gap: 22px; }
 .lp-chip {
-  flex: none; width: 40px; height: 40px;
+  flex: none; width: 1.1em; font-size: var(--lp-h1);
   display: flex; align-items: center; justify-content: center;
-  font-size: 18px;
-  color: var(--m12-accent); background: var(--m12-accent-soft);
-  border-radius: var(--m12-radius);
+  color: var(--m12-accent); line-height: 1;
 }
-.lp-chip--dot { width: 10px; height: 10px; margin: 8px 10px 0; background: var(--m12-accent); color: transparent; font-size: 0; }
-.lp-label { margin: 9px 0 0; font-size: 16px; font-weight: 600; line-height: 1.4; }
-.lp-sub { margin: 2px 0 0; font-size: 16px; color: var(--m12-accent); line-height: 1.45; }
+.lp-label {
+  margin: 0; font-family: var(--m12-serif); font-size: var(--lp-h2); font-weight: 600; line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+.lp-sub { margin: 4px 0 0; font-size: 16px; color: var(--m12-accent); line-height: 1.45; }
 
 .lp-price {
   display: flex; align-items: center; gap: 16px;
@@ -92,10 +94,11 @@ body.bg-wave .m12-card--inline, body.bg-transparent .m12-card--inline { box-shad
 .m12-card--inline.m12-success { padding: 32px 0 8px; }
 
 @media (max-width: 768px) {
-  .lp-h1 { font-size: 48px; }
+  :root { --lp-h1: 48px; --lp-h2: 26px; }
 }
 @media (max-width: 480px) {
+  :root { --lp-h1: 38px; --lp-h2: 22px; }
   .m12--flow { padding: 24px 16px 40px; }
-  .lp-h1 { font-size: 38px; }
   .lp-lede { font-size: 19px; }
+  .lp-item { gap: 14px; }
 }
