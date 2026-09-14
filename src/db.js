@@ -66,8 +66,16 @@ async function migrate() {
       user_agent           TEXT,
       ghl_webhook_status   TEXT,                     -- sent | failed | skipped
       ghl_webhook_response TEXT,
+      wait_token           TEXT,                     -- lets the visitor poll for their private link
+      ghl_contact_id       TEXT,
+      private_channel_link TEXT,                     -- sent back by GHL once the contact is set up
+      link_received_at     TIMESTAMPTZ,
       created_at           TIMESTAMPTZ NOT NULL DEFAULT now()
     );
+    ALTER TABLE form_submissions ADD COLUMN IF NOT EXISTS wait_token TEXT;
+    ALTER TABLE form_submissions ADD COLUMN IF NOT EXISTS ghl_contact_id TEXT;
+    ALTER TABLE form_submissions ADD COLUMN IF NOT EXISTS private_channel_link TEXT;
+    ALTER TABLE form_submissions ADD COLUMN IF NOT EXISTS link_received_at TIMESTAMPTZ;
     ALTER TABLE form_submissions ALTER COLUMN company_name DROP NOT NULL;
     CREATE INDEX IF NOT EXISTS form_submissions_created_at_idx ON form_submissions (created_at DESC);
     CREATE INDEX IF NOT EXISTS form_submissions_email_idx ON form_submissions (lower(email));
@@ -104,12 +112,12 @@ async function insertSubmission(s) {
   const { rows } = await pool.query(
     `INSERT INTO form_submissions
        (company_name, matched_company_id, matched_company_name, match_method, match_confidence,
-        email, email_domain, full_name, phone, city, state, preview_type, url_params, page_url, ip, user_agent)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+        email, email_domain, full_name, phone, city, state, preview_type, url_params, page_url, ip, user_agent, wait_token)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
      RETURNING id, created_at`,
     [s.company_name, s.matched_company_id, s.matched_company_name, s.match_method, s.match_confidence,
      s.email, s.email_domain, s.full_name, s.phone, s.city, s.state, s.preview_type,
-     s.url_params ? JSON.stringify(s.url_params) : null, s.page_url, s.ip, s.user_agent]
+     s.url_params ? JSON.stringify(s.url_params) : null, s.page_url, s.ip, s.user_agent, s.wait_token]
   );
   return rows[0];
 }
@@ -121,6 +129,35 @@ async function updateWebhookStatus(id, status, response) {
   );
 }
 
+/** What the loading screen polls: only with the matching wait token. */
+async function getSubmissionStatus(id, token) {
+  const { rows } = await pool.query(
+    `SELECT id, private_channel_link, ghl_webhook_status, created_at
+       FROM form_submissions WHERE id = $1 AND wait_token = $2`,
+    [id, token]
+  );
+  return rows[0] || null;
+}
+
+/** Attach the private link GHL sent back. Matches by submission id when given, else the newest pending submission for the email. */
+async function setPrivateLink({ submissionId, email, link, contactId }) {
+  const { rows } = await pool.query(
+    `UPDATE form_submissions
+        SET private_channel_link = $1, ghl_contact_id = COALESCE($2, ghl_contact_id), link_received_at = now()
+      WHERE id = (
+        SELECT id FROM form_submissions
+         WHERE ($3::int IS NOT NULL AND id = $3)
+            OR ($3::int IS NULL AND $4::text IS NOT NULL AND lower(email) = lower($4)
+                AND created_at > now() - interval '2 days')
+         ORDER BY (private_channel_link IS NULL) DESC, created_at DESC
+         LIMIT 1
+      )
+      RETURNING id, email`,
+    [link, contactId || null, submissionId || null, email || null]
+  );
+  return rows[0] || null;
+}
+
 async function listSubmissions({ limit = 100, offset = 0 } = {}) {
   const { rows } = await pool.query(
     `SELECT * FROM form_submissions ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
@@ -129,4 +166,7 @@ async function listSubmissions({ limit = 100, offset = 0 } = {}) {
   return rows;
 }
 
-module.exports = { pool, migrate, listCompanies, addCompany, insertSubmission, updateWebhookStatus, listSubmissions };
+module.exports = {
+  pool, migrate, listCompanies, addCompany, insertSubmission, updateWebhookStatus,
+  getSubmissionStatus, setPrivateLink, listSubmissions,
+};

@@ -20,6 +20,8 @@ Railway service for Mindful12: an embeddable intake form (stored in Postgres, fo
    | `GHL_LOCATION_ID` | GHL sub-account (location) ID |
    | `GHL_PIT_TOKEN` | GHL Private Integration Token |
    | `ALLOWED_HOSTS` | Hosts allowed to embed the form / be redirect targets (default `mindful12.mycoursecreator360.com, mindful12.com, *.mindful12.com`) |
+   | `GHL_CALLBACK_SECRET` | Random string; GHL's workflow webhook sends it as `X-Callback-Secret` when posting the private link back |
+   | `GHL_PRIVATE_LINK_FIELD_ID` | Custom field id holding the private group URL (default `ZVPibuKKScCRcqDQWFFL`) |
    | `REDIRECT_URL` | Where to send people after submitting. Placeholders `{id}`, `{email}`, `{preview_type}`, `{company_id}` are filled per submission, e.g. `https://funnel.page/next?sid={id}&preview_type={preview_type}`. Blank = built-in thank-you card |
    | `ADMIN_API_KEY` | any long random string — enables the admin endpoints (optional) |
 
@@ -85,6 +87,24 @@ Messages and options live in `PREVIEW_TYPES` at the top of `public/form.js`; the
 4. **Submit gate** — if a suggestion is pending, submit is blocked until they choose Yes or No.
 5. **Server is the final authority** — on submit the server re-runs the matcher and records `matched_company_id`, `match_method` (`selected` | `name` | `domain` | `none`) and `match_confidence`, so borderline cases can be reviewed later.
 
+## After submit: the private-link handshake
+
+1. Form submits → row stored → webhook to GHL (`GHL_WEBHOOK_URL`) with `submission_id`, email, etc.
+2. The visitor sees a **loading screen** ("Creating your account…") and the form polls `GET /api/submissions/:id/status?token=…` every 2 s (the token is random per submission, so links can't be enumerated).
+3. GHL creates the contact and, once the custom field **`private_channel_link`** (`ZVPibuKKScCRcqDQWFFL`) is set, a workflow **Webhook action** POSTs to `https://YOUR-APP/api/ghl/callback` with header `X-Callback-Secret: <GHL_CALLBACK_SECRET>`. Recommended custom data on that action:
+   - `email` = `{{contact.email}}`
+   - `private_channel_link` = `{{contact.private_channel_link}}`
+   - `submission_id` = `{{contact.submission_id}}` (only if you add that custom field and map it from the inbound webhook — otherwise matching falls back to the newest pending submission for the email in the last 2 days)
+4. The status endpoint flips to `ready` and the **whole page** redirects to the private link.
+5. If nothing arrives in 3 minutes (or the outbound webhook failed), the form falls back to `REDIRECT_URL` if set, else shows "taking longer than expected — you'll also receive your link by email".
+
+`curl` test of the callback:
+
+```bash
+curl -X POST https://YOUR-APP/api/ghl/callback -H "X-Callback-Secret: $GHL_CALLBACK_SECRET" -H "Content-Type: application/json" \
+  -d '{"email":"jane@baystatebenefits.com","private_channel_link":"https://login.mindful12.com/communities/groups/baystate-benefit-services/private-group?invite=invite"}'
+```
+
 ## Security notes
 
 - Only hosts in `ALLOWED_HOSTS` (plus the app itself) can iframe the form (`Content-Security-Policy: frame-ancestors`) or be `?redirect=` targets; the API only answers cross-origin requests from those hosts.
@@ -109,7 +129,9 @@ Seeded with Baystate Benefit Services (`baystatebenefits.com`) and Central Bosto
 | `GET` | `/api/companies` | Registered companies (for the dropdown) |
 | `GET` | `/api/locations/states` | US states/territories |
 | `GET` | `/api/locations/cities?state=MA` | Cities for a state |
-| `POST` | `/api/submissions` | Store submission + fire GHL webhook |
+| `POST` | `/api/submissions` | Store submission + fire GHL webhook; returns `id`, `token`, `wait` |
+| `GET` | `/api/submissions/:id/status?token=` | `pending` \| `ready` (+ `redirect_url`) \| `unavailable` |
+| `POST` | `/api/ghl/callback` | GHL posts the contact's `private_channel_link` here — header `X-Callback-Secret` |
 | `POST` | `/api/companies` | Add a registered company — `{name, domain, website}` — header `X-Admin-Key` |
 | `GET` | `/api/submissions?limit=100&offset=0` | List submissions — header `X-Admin-Key` |
 

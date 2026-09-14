@@ -4,8 +4,15 @@
     {
       "name": "mindful12-dev",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["src/server.js"],
-      "env": { "DATABASE_URL": "memory", "PORT": "3000" },
+      "runtimeArgs": [
+        "src/server.js"
+      ],
+      "env": {
+        "DATABASE_URL": "memory",
+        "PORT": "3000",
+        "GHL_WEBHOOK_URL": "http://localhost:3000/health",
+        "GHL_CALLBACK_SECRET": "devsecret"
+      },
       "port": 3000
     }
   ]

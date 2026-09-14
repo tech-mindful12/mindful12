@@ -1,6 +1,7 @@
 'use strict';
 
 const path = require('path');
+const crypto = require('crypto');
 const express = require('express');
 const db = require('./db');
 const ghl = require('./ghl');
@@ -11,8 +12,14 @@ const locations = require('../data/us-locations.json');
 const PORT = process.env.PORT || 3000;
 const GHL_WEBHOOK_URL = ghl.config.webhookUrl;
 const ADMIN_API_KEY = process.env.ADMIN_API_KEY || '';
-// Where the form sends people after a successful submit. May contain {id}, {email}, {preview_type}, {company_id}.
+// Fallback destination after submit if GHL doesn't send a private link back in time.
+// May contain {id}, {email}, {preview_type}, {company_id}.
 const REDIRECT_URL = process.env.REDIRECT_URL || '';
+// Shared secret GHL's workflow webhook must send (header X-Callback-Secret or ?secret=) when posting the private link back.
+const GHL_CALLBACK_SECRET = process.env.GHL_CALLBACK_SECRET || '';
+// GHL custom field holding the visitor's private group URL.
+const PRIVATE_LINK_FIELD_ID = process.env.GHL_PRIVATE_LINK_FIELD_ID || 'ZVPibuKKScCRcqDQWFFL';
+const PRIVATE_LINK_FIELD_KEY = 'private_channel_link';
 
 const STATE_CODES = new Set(locations.states.map((s) => s.code));
 
@@ -49,6 +56,23 @@ app.use('/api', (req, res, next) => {
   }
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
+});
+
+// The loading screen polls this every 2s, so it sits above the general /api limiter with its own, looser one.
+app.get('/api/submissions/:id/status', security.rateLimit({ windowMs: 60 * 1000, max: 600 }), async (req, res, next) => {
+  const id = parseInt(req.params.id, 10);
+  const token = str(req.query.token, 64);
+  if (!id || !token) return res.status(400).json({ ok: false, error: 'Missing id or token' });
+  try {
+    const row = await db.getSubmissionStatus(id, token);
+    if (!row) return res.status(404).json({ ok: false, error: 'Not found' });
+    res.setHeader('Cache-Control', 'no-store');
+    if (row.private_channel_link) return res.json({ ok: true, status: 'ready', redirect_url: row.private_channel_link });
+    if (row.ghl_webhook_status === 'failed' || row.ghl_webhook_status === 'skipped') {
+      return res.json({ ok: true, status: 'unavailable', reason: row.ghl_webhook_status }); // GHL never got it; don't make them wait
+    }
+    res.json({ ok: true, status: 'pending' });
+  } catch (err) { next(err); }
 });
 
 app.use('/api', security.rateLimit({ windowMs: 60 * 1000, max: 120 }));
@@ -97,6 +121,7 @@ app.get('/api/locations/cities', (req, res) => {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const str = (v, max = 200) => (v == null ? '' : String(v)).trim().slice(0, max);
+const isHttpsUrl = (v) => { try { return new URL(v).protocol === 'https:'; } catch (e) { return false; } };
 
 app.post('/api/submissions', submitLimiter, async (req, res, next) => {
   const b = req.body || {};
@@ -145,8 +170,10 @@ app.post('/api/submissions', submitLimiter, async (req, res, next) => {
       confidence = result.best.score;
     }
 
+    const waitToken = crypto.randomBytes(24).toString('base64url');
     const row = await db.insertSubmission({
       ...input,
+      wait_token: waitToken,
       company_name: input.company_name || null,
       matched_company_id: matched ? matched.id : null,
       matched_company_name: matched ? matched.name : null,
@@ -158,9 +185,12 @@ app.post('/api/submissions', submitLimiter, async (req, res, next) => {
     });
 
     // Respond immediately; the webhook runs after and records its own outcome.
+    // wait=true tells the form to show the loading screen and poll for the private link GHL sends back.
     res.status(201).json({
       ok: true,
       id: row.id,
+      token: waitToken,
+      wait: Boolean(GHL_WEBHOOK_URL),
       matched_company: matched ? { id: matched.id, name: matched.name } : null,
       match_method: method,
       redirect_url: security.safeRedirect(input.redirect)
@@ -227,6 +257,61 @@ async function sendToGhl(submissionId, payload) {
     clearTimeout(timer);
   }
 }
+
+// ---------- GHL -> Railway callback ----------
+
+/** Walk the callback payload for the private link: by field id, by field key, or nested under contact/customData. */
+function findPrivateLink(obj, depth = 0) {
+  if (!obj || typeof obj !== 'object' || depth > 4) return '';
+  for (const [key, value] of Object.entries(obj)) {
+    const k = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if ((key === PRIVATE_LINK_FIELD_ID || k.endsWith(PRIVATE_LINK_FIELD_KEY.replace(/_/g, ''))) && typeof value === 'string') {
+      return value.trim();
+    }
+    // GHL sometimes ships custom fields as [{ id, value }]
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        if (item && item.id === PRIVATE_LINK_FIELD_ID && typeof item.value === 'string') return item.value.trim();
+      }
+    }
+  }
+  for (const value of Object.values(obj)) {
+    if (value && typeof value === 'object') { const found = findPrivateLink(value, depth + 1); if (found) return found; }
+  }
+  return '';
+}
+
+/**
+ * GHL workflow -> Webhook action, fired when the private_channel_link custom field is updated.
+ * Send header X-Callback-Secret: <GHL_CALLBACK_SECRET>. The body should carry the contact's email
+ * (and submission_id if that custom field exists) plus the link.
+ */
+app.post('/api/ghl/callback', async (req, res, next) => {
+  if (!GHL_CALLBACK_SECRET) return res.status(503).json({ ok: false, error: 'GHL_CALLBACK_SECRET not configured' });
+  const provided = req.get('x-callback-secret') || str(req.query.secret, 200);
+  if (!security.safeEqual(provided, GHL_CALLBACK_SECRET)) return res.status(401).json({ ok: false, error: 'Unauthorized' });
+
+  const b = req.body || {};
+  const c = b.contact && typeof b.contact === 'object' ? b.contact : {};
+  const cd = b.customData && typeof b.customData === 'object' ? b.customData : {};
+  const link = findPrivateLink(b);
+  const email = str(cd.email || b.email || c.email, 200).toLowerCase();
+  const submissionId = parseInt(cd.submission_id || b.submission_id || c.submission_id, 10) || null;
+  const contactId = str(b.contact_id || b.id || c.id || cd.contact_id, 100) || null;
+
+  if (!link) return res.status(422).json({ ok: false, error: `No ${PRIVATE_LINK_FIELD_KEY} in payload` });
+  if (!isHttpsUrl(link)) return res.status(422).json({ ok: false, error: 'Link must be an https URL' });
+  if (!submissionId && !email) return res.status(422).json({ ok: false, error: 'Need submission_id or email to match the submission' });
+
+  try {
+    const matched = await db.setPrivateLink({ submissionId, email, link, contactId });
+    if (!matched) {
+      console.warn(`[ghl] callback: no submission matched (submission_id=${submissionId} email=${email})`);
+      return res.status(404).json({ ok: false, error: 'No matching submission' });
+    }
+    res.json({ ok: true, submission_id: matched.id });
+  } catch (err) { next(err); }
+});
 
 // ---------- Admin API (X-Admin-Key header) ----------
 
