@@ -206,6 +206,23 @@ select { padding-right: 36px; cursor: pointer; }
 
 .m12-success { text-align: center; padding: 44px 28px; }
 
+/* Heads-up before we send them to the community signup */
+.m12-redirect { padding: 36px 28px; max-width: 560px; }
+.m12-redirect-icon {
+  width: 52px; height: 52px; margin-bottom: 16px;
+  border-radius: var(--m12-radius); background: var(--m12-accent-soft); color: var(--m12-accent);
+  display: flex; align-items: center; justify-content: center;
+}
+.m12-redirect h2 { margin: 0 0 12px; font-size: 24px; line-height: 1.2; }
+.m12-redirect p { margin: 0 0 14px; font-size: 16px; line-height: 1.55; color: var(--m12-text); }
+.m12-redirect-warn {
+  padding: 12px 14px; border-left: 4px solid var(--m12-accent);
+  background: var(--m12-accent-soft); border-radius: var(--m12-radius);
+}
+.m12-redirect-warn span { font-weight: 600; word-break: break-all; }
+.m12-redirect-count { color: var(--m12-muted); font-size: 15px !important; }
+.m12-redirect .m12-btn { width: auto; padding: 13px 26px; }
+
 .m12-check {
   width: 56px; height: 56px; margin: 0 auto 16px;
   border-radius: var(--m12-radius); background: var(--m12-accent-soft); color: var(--m12-accent);
