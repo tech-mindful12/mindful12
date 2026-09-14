@@ -103,7 +103,7 @@ The chosen URL is stored on the submission (`redirect_url`) and included in the 
 
 ## Admin panel
 
-`https://YOUR-APP/admin` — password from `ADMIN_PASSWORD`. Edit registered companies inline (name, domain, website, **invite link**, passcode, active), add new ones, delete. Sessions are signed tokens valid for 12 h; login is rate-limited (10 tries / 15 min per IP).
+`https://YOUR-APP/admin` — password from `ADMIN_PASSWORD`. Edit registered companies inline (name, domain, website, **invite link**, passcode, tag, active), add new ones, delete. Sessions are signed tokens valid for 12 h; login is rate-limited (10 tries / 15 min per IP).
 
 Embed it on a page like `mindful12.com/admin` with:
 
@@ -126,7 +126,7 @@ Embed it on a page like `mindful12.com/admin` with:
 
 ## Database
 
-**`registered_companies`** — `id, name, domain, website, invite_link, passcode, active, created_at, updated_at`
+**`registered_companies`** — `id, name, domain, website, invite_link, passcode, tag, active, created_at, updated_at`
 Seeded with Baystate Benefit Services (`baystatebenefits.com`) and Central Boston Elder Services (`centralboston.org`).
 
 **`form_submissions`** — every submission: `company_name` (as typed; null if left blank), `matched_company_id/name`, `match_method`, `match_confidence`, `email`, `email_domain`, `full_name`, `phone`, `city`, `state`, `preview_type`, `url_params` (jsonb), `page_url`, `redirect_url`, `ip`, `user_agent`, `ghl_webhook_status` (`sent` | `failed` | `skipped`), `ghl_webhook_response`, `created_at`.

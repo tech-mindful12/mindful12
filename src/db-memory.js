@@ -14,7 +14,7 @@ const pool = { query: async () => ({ rows: [] }) };
 async function migrate(seed) {
   for (const c of seed) {
     if (!companies.some((x) => x.name.toLowerCase() === c.name.toLowerCase())) {
-      companies.push({ id: nextCompanyId++, active: true, invite_link: null, passcode: null, created_at: new Date(), updated_at: new Date(), ...c });
+      companies.push({ id: nextCompanyId++, active: true, invite_link: null, passcode: null, tag: null, created_at: new Date(), updated_at: new Date(), ...c });
     }
   }
   console.warn('[db] Using in-memory database — submissions will NOT persist');
@@ -42,18 +42,18 @@ function assertUnique({ name, domain }, exceptId) {
   }
 }
 
-async function addCompany({ name, domain, website, invite_link, passcode }) {
+async function addCompany({ name, domain, website, invite_link, passcode, tag }) {
   assertUnique({ name, domain });
-  const row = { id: nextCompanyId++, name, domain, website: website || null, invite_link: invite_link || null, passcode: passcode || null, active: true, created_at: new Date(), updated_at: new Date() };
+  const row = { id: nextCompanyId++, name, domain, website: website || null, invite_link: invite_link || null, passcode: passcode || null, tag: tag || null, active: true, created_at: new Date(), updated_at: new Date() };
   companies.push(row);
   return { ...row };
 }
 
-async function updateCompany(id, { name, domain, website, invite_link, passcode, active }) {
+async function updateCompany(id, { name, domain, website, invite_link, passcode, tag, active }) {
   const row = companies.find((c) => c.id === id);
   if (!row) return null;
   assertUnique({ name, domain }, id);
-  Object.assign(row, { name, domain, website: website || null, invite_link: invite_link || null, passcode: passcode || null, active, updated_at: new Date() });
+  Object.assign(row, { name, domain, website: website || null, invite_link: invite_link || null, passcode: passcode || null, tag: tag || null, active, updated_at: new Date() });
   return { ...row };
 }
 
