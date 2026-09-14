@@ -17,10 +17,10 @@
 <body>
   <div class="wrap">
     <h1>Embed demo</h1>
-    <p>This page stands in for a GHL funnel page. Add <code>?preview_type=…</code> to this URL and it flows into the form.</p>
+    <p>This page stands in for a GHL funnel page. Add <code>?preview_type=…</code> or <code>?step=7</code> to this URL and it flows into the embed. Remove <code>data-page="preview"</code> for the bare form.</p>
 
     <!-- This is what goes into the GHL Custom HTML element -->
-    <div class="mindful12-form" data-preview-type="brochure" data-bg="transparent"></div>
+    <div class="mindful12-form" data-page="preview" data-preview-type="hr" data-bg="transparent"></div>
     <script src="embed.js"></script>
 
     <div class="after">Content below the form — the iframe resizes itself so this never overlaps.</div>

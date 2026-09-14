@@ -1,11 +1,12 @@
 /*
  * Mindful12 embed loader — paste into a GHL "Custom HTML" element:
  *
- *   <div class="mindful12-form" data-preview-type="brochure"></div>
+ *   <div class="mindful12-form" data-preview-type="hr"></div>
  *   <script src="https://YOUR-APP.up.railway.app/embed.js"></script>
  *
- * Any data-* attribute becomes a URL parameter on the form (data-preview-type -> preview_type,
- * data-bg -> bg, data-title -> title, data-redirect -> redirect, ...).
+ * data-page="preview" loads the multi-step walkthrough that ends with the form (preview.html)
+ * instead of the bare form. Any other data-* attribute becomes a URL parameter on the form
+ * (data-preview-type -> preview_type, data-bg -> bg, data-redirect -> redirect, ...).
  * Query parameters on the funnel page URL (?preview_type=..., ?email=..., utm_*) are forwarded too,
  * and win over data-* attributes, so one page can serve several preview types via its link.
  */
@@ -19,16 +20,17 @@
     if (container.getAttribute('data-mounted')) return;
     container.setAttribute('data-mounted', '1');
 
+    var page = container.getAttribute('data-page') === 'preview' ? '/preview.html' : '/';
     var params = new URLSearchParams();
     Array.prototype.forEach.call(container.attributes, function (a) {
-      if (a.name.indexOf('data-') === 0 && a.name !== 'data-mounted') {
+      if (a.name.indexOf('data-') === 0 && a.name !== 'data-mounted' && a.name !== 'data-page') {
         params.set(a.name.slice(5).replace(/-/g, '_'), a.value);
       }
     });
     new URLSearchParams(window.location.search).forEach(function (v, k) { params.set(k, v); });
 
     var iframe = document.createElement('iframe');
-    iframe.src = base + '/?' + params.toString();
+    iframe.src = base + page + '?' + params.toString();
     iframe.title = 'Mindful12 form';
     iframe.style.cssText = 'width:100%;border:0;display:block;min-height:560px;overflow:hidden;';
     iframe.setAttribute('scrolling', 'no');
@@ -40,6 +42,10 @@
       if (e.data.type === 'mindful12:height' && e.data.height) {
         iframe.style.height = Math.ceil(e.data.height) + 'px';
         iframe.style.minHeight = '0';
+      }
+      if (e.data.type === 'mindful12:scroll') {
+        var top = iframe.getBoundingClientRect().top + window.pageYOffset - 16;
+        if (window.pageYOffset > top) window.scrollTo({ top: top, behavior: 'smooth' });
       }
       if (e.data.type === 'mindful12:submitted') {
         container.dispatchEvent(new CustomEvent('mindful12:submitted', { detail: e.data, bubbles: true }));

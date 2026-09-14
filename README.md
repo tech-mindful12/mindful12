@@ -35,6 +35,15 @@ Add a **Custom HTML** element and paste:
 <script src="https://YOUR-APP/embed.js"></script>
 ```
 
+For the full **HR Preview walkthrough** (7 steps ending in the form) add `data-page="preview"`:
+
+```html
+<div class="mindful12-form" data-page="preview" data-preview-type="hr"></div>
+<script src="https://YOUR-APP/embed.js"></script>
+```
+
+That loads `public/preview.html` (steps in the HTML, styling in `flow.css`, Continue/Back in `flow.js`; Playfair Display headings, Inter body). The form is initialized on page load, so URL params apply even though it's only revealed on step 7; `?step=7` jumps straight to it.
+
 `embed.js` renders the form in an auto-resizing iframe. Every `data-*` attribute becomes a form URL parameter, and **query parameters on the funnel page URL are forwarded too** (and win over `data-*`), so `https://funnel.page/preview?preview_type=video` sets the hidden Preview Type without touching the page.
 
 The page can react to a submission: `document.addEventListener('mindful12:submitted', e => console.log(e.detail))`.
@@ -45,6 +54,7 @@ You can also iframe `https://YOUR-APP/?preview_type=...` directly. `https://YOUR
 
 | Param | Effect |
 |---|---|
+| `step` | `preview.html` only — open on this step (1–7) |
 | `preview_type` | `executive` \| `employee` \| `hr` \| `independent` (default `independent`). Hidden field, stored + sent to GHL; see below |
 | `company`, `email`, `name`, `phone`, `city`, `state` | Prefill (state accepts `MA` or `Massachusetts`) |
 | `bg` | `white` (default), `wave` (branded background image), `transparent` |
@@ -126,4 +136,4 @@ Or point `DATABASE_URL` at a real Postgres (copy `.env.example` to `.env` and lo
 
 ## Branding
 
-Highlight `#2D67FF`, text `#0D2158`, Inter, 5px corner radius everywhere, white background; `public/assets/bg.jpg` is the wave background (compressed from the source PNG), shown with `?bg=wave`.
+Highlight `#2D67FF`, text `#0D2158`, Inter (body) + Playfair Display (walkthrough headings), 5px corner radius everywhere, white background; `public/assets/bg.jpg` is the wave background (compressed from the source PNG), shown with `?bg=wave`.
