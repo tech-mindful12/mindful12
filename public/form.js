@@ -438,12 +438,24 @@
   var WAIT_POLL_MS = 2000, WAIT_MAX_MS = 3 * 60 * 1000, WAIT_SLOW_MS = 20 * 1000;
 
   function waitForPrivateLink(body) {
-    var started = Date.now(), stopped = false;
+    var started = Date.now(), stopped = false, timer = null;
     els.waiting.hidden = false;
     els.waitingSlow.hidden = true;
     postHeight();
 
-    function stop() { stopped = true; }
+    function stop() {
+      stopped = true;
+      clearTimeout(timer);
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pagehide', stop);
+    }
+    // Don't poll while the tab is hidden or the visitor has left; check right away when they come back.
+    function onVisibility() {
+      clearTimeout(timer);
+      if (!document.hidden && !stopped) poll();
+    }
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pagehide', stop);
     function giveUp() {
       stop();
       // Nothing came back in time. Fall back to the configured redirect, or tell them what happens next.
@@ -458,6 +470,7 @@
 
     function poll() {
       if (stopped) return;
+      if (document.hidden) return; // resumes via visibilitychange
       fetch('/api/submissions/' + body.id + '/status?token=' + encodeURIComponent(body.token), { cache: 'no-store' })
         .then(function (r) { return r.json(); })
         .then(function (s) {
@@ -471,11 +484,11 @@
             els.waitingContinue.hidden = !body.redirect_url;
             postHeight();
           }
-          setTimeout(poll, WAIT_POLL_MS);
+          timer = setTimeout(poll, WAIT_POLL_MS);
         })
-        .catch(function () { if (!stopped) setTimeout(poll, WAIT_POLL_MS * 2); });
+        .catch(function () { if (!stopped) timer = setTimeout(poll, WAIT_POLL_MS * 2); });
     }
-    setTimeout(poll, WAIT_POLL_MS);
+    timer = setTimeout(poll, WAIT_POLL_MS);
   }
 
   // ---------- Utilities ----------
