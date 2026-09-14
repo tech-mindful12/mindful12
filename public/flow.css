@@ -55,10 +55,7 @@
   display: flex; align-items: center; justify-content: center;
   color: var(--m12-accent); line-height: 1;
 }
-.lp-label {
-  margin: 0; font-family: var(--m12-serif); font-size: var(--lp-h2); font-weight: 600; line-height: 1.15;
-  letter-spacing: -0.01em;
-}
+.lp-label { margin: 0; font-size: var(--lp-h2); font-weight: 700; line-height: 1.15; letter-spacing: -0.01em; }
 .lp-sub { margin: 4px 0 0; font-size: 16px; color: var(--m12-accent); line-height: 1.45; }
 
 .lp-price {
