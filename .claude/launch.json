@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "mindful12-dev",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["src/server.js"],
+      "env": { "DATABASE_URL": "memory", "PORT": "3000" },
+      "port": 3000
+    }
+  ]
+}
