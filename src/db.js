@@ -48,7 +48,7 @@ async function migrate() {
 
     CREATE TABLE IF NOT EXISTS form_submissions (
       id                   SERIAL PRIMARY KEY,
-      company_name         TEXT,                     -- exactly what the user typed / picked (null for hr/independent)
+      company_name         TEXT,                     -- exactly what the user typed / picked (null if left blank)
       matched_company_id   INTEGER REFERENCES registered_companies(id) ON DELETE SET NULL,
       matched_company_name TEXT,                     -- denormalized so it survives renames
       match_method         TEXT,                     -- selected | name | domain | none

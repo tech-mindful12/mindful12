@@ -55,14 +55,14 @@ You can also iframe `https://YOUR-APP/?preview_type=...` directly. `https://YOUR
 
 ### Preview types
 
-The preview type sets the message above the form and whether the Company Name field is shown. Visitors can click **Change?** to pick one of the other descriptions (radio list + Confirm), which updates the hidden `preview_type` that gets stored and sent to GHL.
+The preview type sets the message above the form and whether Company Name is required. Visitors can click **Change?** to pick one of the other descriptions (radio list + Confirm), which updates the hidden `preview_type` that gets stored and sent to GHL.
 
 | `preview_type` | Message | Company field |
 |---|---|---|
-| `executive` | You're here because your company is considering Mindful12. | shown |
-| `employee` | You're here because your company has invited you to preview Mindful12. | shown |
-| `hr` | You're here to see how Mindful12 could support your people. | hidden |
-| `independent` (default) | You're exploring Mindful12 on your own. | hidden |
+| `executive` | You're here because your company is considering Mindful12. | required |
+| `employee` | You're here because your company has invited you to preview Mindful12. | required |
+| `hr` | You're here to see how Mindful12 could support your people. | required |
+| `independent` (default) | You're exploring Mindful12 on your own. | optional — "If you don't have a company, leave this blank." |
 
 Messages and options live in `PREVIEW_TYPES` at the top of `public/form.js`; the server-side list is in `src/server.js`.
 
@@ -79,7 +79,7 @@ Messages and options live in `PREVIEW_TYPES` at the top of `public/form.js`; the
 **`registered_companies`** — `id, name, domain, website, active, created_at, updated_at`
 Seeded with Baystate Benefit Services (`baystatebenefits.com`) and Central Boston Elder Services (`centralboston.org`).
 
-**`form_submissions`** — every submission: `company_name` (as typed; null for hr/independent), `matched_company_id/name`, `match_method`, `match_confidence`, `email`, `email_domain`, `full_name`, `phone`, `city`, `state`, `preview_type`, `url_params` (jsonb), `page_url`, `ip`, `user_agent`, `ghl_webhook_status` (`sent` | `failed` | `skipped`), `ghl_webhook_response`, `created_at`.
+**`form_submissions`** — every submission: `company_name` (as typed; null if left blank), `matched_company_id/name`, `match_method`, `match_confidence`, `email`, `email_domain`, `full_name`, `phone`, `city`, `state`, `preview_type`, `url_params` (jsonb), `page_url`, `ip`, `user_agent`, `ghl_webhook_status` (`sent` | `failed` | `skipped`), `ghl_webhook_response`, `created_at`.
 
 ## API
 

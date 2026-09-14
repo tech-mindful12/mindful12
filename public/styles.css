@@ -55,6 +55,8 @@ label {
   margin-bottom: 6px;
   color: var(--m12-text);
 }
+.m12-optional { font-weight: 500; color: var(--m12-muted); }
+.m12-help { margin-top: 6px; font-size: 13px; color: var(--m12-muted); }
 
 input[type="text"], input[type="email"], input[type="tel"], select {
   width: 100%;
