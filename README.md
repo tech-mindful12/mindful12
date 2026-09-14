@@ -74,10 +74,12 @@ The preview type sets the message above the form and whether Company Name is req
 
 | `preview_type` | Message | Company field |
 |---|---|---|
-| `executive` | You're here because your company is considering Mindful12. | required |
-| `employee` | You're here because your company has invited you to preview Mindful12. | required |
-| `hr` | You're here to see how Mindful12 could support your people. | required |
-| `independent` (default) | You're exploring Mindful12 on your own. | optional — "If you don't have a company, leave this blank." |
+| `executive` | You're here because your company is considering Mindful12. | shown, required |
+| `employee` | You're here because your company has invited you to preview Mindful12. | shown, required |
+| `hr` | You're here to see how Mindful12 could support your people. | hidden |
+| `independent` (default) | You're exploring Mindful12 on your own. | hidden |
+
+Phone is optional for everyone (validated only if entered).
 
 Messages and options live in `PREVIEW_TYPES` at the top of `public/form.js`; the server-side list is in `src/server.js`.
 

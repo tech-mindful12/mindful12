@@ -30,17 +30,17 @@
   // ?bg=transparent (default)|white|wave   ?button=   ?redirect= (overrides the REDIRECT_URL server variable)
 
   // ---------- Preview type ----------
-  // Drives the message above the form and whether Company Name is required.
+  // Drives the message above the form and whether Company Name is collected.
 
   var PREVIEW_TYPES = {
     executive:   { message: 'You’re here because your company is considering Mindful12.',
-                   option: 'My company is considering Mindful12', companyRequired: true },
+                   option: 'My company is considering Mindful12', company: true },
     employee:    { message: 'You’re here because your company has invited you to preview Mindful12.',
-                   option: 'My company invited me to preview Mindful12', companyRequired: true },
+                   option: 'My company invited me to preview Mindful12', company: true },
     hr:          { message: 'You’re here to see how Mindful12 could support your people.',
-                   option: 'I want to see how Mindful12 could support my people', companyRequired: true },
+                   option: 'I want to see how Mindful12 could support my people', company: false },
     independent: { message: 'You’re exploring Mindful12 on your own.',
-                   option: 'I’m exploring Mindful12 on my own', companyRequired: false },
+                   option: 'I’m exploring Mindful12 on my own', company: false },
   };
   var DEFAULT_PREVIEW_TYPE = 'independent';
 
@@ -49,7 +49,8 @@
     return PREVIEW_TYPES[v] ? v : DEFAULT_PREVIEW_TYPE;
   }
 
-  function companyRequired() { return PREVIEW_TYPES[els.previewType.value].companyRequired; }
+  // Company Name is shown (and required) for executive/employee; hidden for hr/independent.
+  function companyShown() { return PREVIEW_TYPES[els.previewType.value].company; }
 
   function applyPreviewType(type) {
     els.previewType.value = type;
@@ -58,10 +59,8 @@
       els.context.hidden = false;
       els.chooser.hidden = true;
     }
-    // Independent visitors may not have a company; everyone else must give one.
-    els.companyOptional.hidden = companyRequired();
-    els.companyHelp.hidden = companyRequired();
-    if (!companyRequired()) setError('company_name', '');
+    els.companyField.hidden = !companyShown();
+    if (!companyShown()) { hideSuggest(); els.emailSuggest.hidden = true; setError('company_name', ''); }
     postHeight();
   }
 
@@ -242,6 +241,7 @@
 
   /** Fetch suggestions for the current text, show the dropdown, and auto-attach / offer "Did you mean?". */
   function refreshCompany() {
+    if (!companyShown()) return;
     var typed = els.company.value.trim();
     if (!typed) { els.companyId.value = ''; hideMatched(); hideSuggest(); return; }
     if (els.companyId.value) return; // already attached
@@ -275,7 +275,7 @@
    * Resolves true when we're blocking on that decision.
    */
   function needsCompanyDecision() {
-    if (els.companyId.value) return Promise.resolve(false);
+    if (!companyShown() || els.companyId.value) return Promise.resolve(false);
     return lookup(els.company.value, els.email.value).then(function (r) {
       var pending = null, el = null;
       if (r.byDomain && els.emailSuggest.dataset.dismissed !== String(r.byDomain.id)) {
@@ -295,6 +295,7 @@
 
   /** If the email is on a registered company's domain, make sure the submission lands there. */
   function checkEmailDomain() {
+    if (!companyShown()) return;
     var email = els.email.value.trim();
     if (!/@[^@\s]+\.[^@\s]+$/.test(email)) return;
     lookup('', email).then(function (r) {
@@ -386,10 +387,11 @@
 
   function validate() {
     var errors = {};
-    if (companyRequired() && !els.company.value.trim()) errors.company_name = 'Enter your company name';
+    if (companyShown() && !els.company.value.trim()) errors.company_name = 'Enter your company name';
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(els.email.value.trim())) errors.email = 'Enter a valid email address';
     if (!els.fullName.value.trim()) errors.full_name = 'Enter your full name';
-    if (els.phone.value.replace(/\D/g, '').length < 10) errors.phone = 'Enter a valid phone number';
+    var digits = els.phone.value.replace(/\D/g, '');
+    if (digits.length && digits.length < 10) errors.phone = 'Enter a valid phone number, or leave it blank';
     if (!els.state.value) errors.state = 'Select a state';
     if (!els.city.value.trim()) errors.city = 'Enter your city';
     ['company_name', 'email', 'full_name', 'phone', 'state', 'city'].forEach(function (f) { setError(f, errors[f] || ''); });
@@ -415,8 +417,8 @@
 
   function submit() {
     var payload = {
-      company_name: els.company.value.trim(),
-      company_id: els.companyId.value || null,
+      company_name: companyShown() ? els.company.value.trim() : '',
+      company_id: companyShown() ? (els.companyId.value || null) : null,
       email: els.email.value.trim(),
       full_name: els.fullName.value.trim(),
       phone: els.phone.value.trim(),

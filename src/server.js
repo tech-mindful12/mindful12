@@ -15,10 +15,10 @@ const ADMIN_API_KEY = process.env.ADMIN_API_KEY || '';
 
 const STATE_CODES = new Set(locations.states.map((s) => s.code));
 
-// Preview types (set via URL on the embed). Company name is optional only for independent visitors.
+// Preview types (set via URL on the embed). Company name is only collected from executive/employee visitors.
 const PREVIEW_TYPES = ['executive', 'employee', 'hr', 'independent'];
 const DEFAULT_PREVIEW_TYPE = 'independent';
-const COMPANY_REQUIRED_FOR = new Set(['executive', 'employee', 'hr']);
+const COMPANY_REQUIRED_FOR = new Set(['executive', 'employee']);
 
 /**
  * Where people go after submitting, in priority order:
@@ -163,7 +163,8 @@ app.post('/api/submissions', submitLimiter, async (req, res, next) => {
   if (COMPANY_REQUIRED_FOR.has(input.preview_type) && !input.company_name) errors.company_name = 'Company name is required';
   if (!EMAIL_RE.test(input.email)) errors.email = 'Enter a valid email address';
   if (!input.full_name) errors.full_name = 'Full name is required';
-  if (input.phone.replace(/\D/g, '').length < 10) errors.phone = 'Enter a valid phone number';
+  const phoneDigits = input.phone.replace(/\D/g, '');
+  if (phoneDigits.length && phoneDigits.length < 10) errors.phone = 'Enter a valid phone number, or leave it blank';
   if (!input.city) errors.city = 'City is required';
   if (!STATE_CODES.has(input.state)) errors.state = 'Select a state';
   if (Object.keys(errors).length) return res.status(422).json({ ok: false, errors });
@@ -191,6 +192,7 @@ app.post('/api/submissions', submitLimiter, async (req, res, next) => {
     const row = await db.insertSubmission({
       ...input,
       company_name: input.company_name || null,
+      phone: input.phone || null,
       matched_company_id: matched ? matched.id : null,
       matched_company_name: matched ? matched.name : null,
       match_method: method,
@@ -226,7 +228,7 @@ app.post('/api/submissions', submitLimiter, async (req, res, next) => {
       full_name: input.full_name,
       first_name: input.full_name.split(/\s+/)[0],
       last_name: input.full_name.split(/\s+/).slice(1).join(' '),
-      phone: input.phone,
+      phone: input.phone || null,
       city: input.city,
       state: input.state,
       preview_type: input.preview_type,

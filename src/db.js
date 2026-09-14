@@ -62,7 +62,7 @@ async function migrate() {
       email                TEXT NOT NULL,
       email_domain         TEXT,
       full_name            TEXT NOT NULL,
-      phone                TEXT NOT NULL,
+      phone                TEXT,                     -- optional
       city                 TEXT NOT NULL,
       state                TEXT NOT NULL,            -- 2-letter code
       preview_type         TEXT NOT NULL DEFAULT 'independent', -- executive | employee | hr | independent
@@ -77,6 +77,7 @@ async function migrate() {
     );
     ALTER TABLE form_submissions ALTER COLUMN company_name DROP NOT NULL;
     ALTER TABLE form_submissions ADD COLUMN IF NOT EXISTS redirect_url TEXT;
+    ALTER TABLE form_submissions ALTER COLUMN phone DROP NOT NULL;
     CREATE INDEX IF NOT EXISTS form_submissions_created_at_idx ON form_submissions (created_at DESC);
     CREATE INDEX IF NOT EXISTS form_submissions_email_idx ON form_submissions (lower(email));
     CREATE INDEX IF NOT EXISTS form_submissions_company_idx ON form_submissions (matched_company_id);
