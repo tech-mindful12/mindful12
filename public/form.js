@@ -13,6 +13,7 @@
     state: $('state'), city: $('city'), cityList: $('city-list'),
     previewType: $('preview_type'), submit: $('submit-btn'), formError: $('form-error'),
     success: $('m12-success'), successText: $('success-text'),
+    redirect: $('m12-redirect'), redirectEmail: $('redirect-email'), redirectCount: $('redirect-count'), redirectNow: $('redirect-now'),
     companyField: $('company-field'), companyOptional: $('company-optional'), companyHelp: $('company-help'),
     context: $('m12-context'), contextText: $('context-text'), contextChange: $('context-change'),
     chooser: $('context-chooser'), options: $('context-options'), confirm: $('context-confirm'), cancel: $('context-cancel'),
@@ -420,12 +421,40 @@
     // The server picked the destination: the company's invite link, or the per-preview-type fallback.
     var redirect = body.redirect_url;
     if (redirect && /^https?:\/\//i.test(redirect)) {
-      try { window.top.location.href = redirect; } catch (e) { window.location.href = redirect; }
-      return;
+      if (els.redirect) return showRedirectNotice(redirect);
+      return go(redirect);
     }
     if (params.get('success')) els.successText.textContent = params.get('success');
     els.success.hidden = false;
     postHeight();
+  }
+
+  /** Redirect the whole page (not just the iframe). */
+  function go(url) {
+    try { window.top.location.href = url; } catch (e) { window.location.href = url; }
+  }
+
+  var REDIRECT_DELAY_S = 8;
+
+  /**
+   * The destination asks them to create a login (name, email, password). Explain that first so
+   * nobody closes the signup modal and misses the session; then send them on, or sooner if they click.
+   */
+  function showRedirectNotice(url) {
+    var seconds = REDIRECT_DELAY_S, done = false;
+    els.redirectEmail.textContent = els.email.value.trim();
+    els.redirectCount.textContent = seconds;
+    els.redirect.hidden = false;
+    postHeight();
+    if (window.parent !== window) window.parent.postMessage({ type: 'mindful12:scroll' }, '*');
+
+    function leave() { if (done) return; done = true; clearInterval(timer); go(url); }
+    els.redirectNow.addEventListener('click', leave);
+    var timer = setInterval(function () {
+      seconds -= 1;
+      els.redirectCount.textContent = seconds;
+      if (seconds <= 0) leave();
+    }, 1000);
   }
 
   // ---------- Utilities ----------
