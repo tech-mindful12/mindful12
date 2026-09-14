@@ -4,7 +4,7 @@
   --m12-serif: 'Playfair Display', Georgia, 'Times New Roman', serif;
 }
 
-:root { --lp-h1: 72px; --lp-h2: 32px; }
+:root { --lp-h1: 72px; }
 .m12--flow { max-width: 915px; margin: 0; padding: 32px 20px 48px; text-align: left; }
 
 .lp-step { display: none; }
@@ -50,12 +50,14 @@
 .lp-item { display: flex; align-items: center; gap: 22px; padding: 18px 0; border-top: 2px solid #CBD5E0; }
 .lp-item:first-child { border-top: 0; padding-top: 0; }
 .lp-item:last-child { padding-bottom: 0; }
+/* Icon ~30% smaller than the headline, inside a #D6E4FE circle with 10px padding */
 .lp-chip {
-  flex: none; width: 1.1em; font-size: var(--lp-h1);
+  flex: none; font-size: calc(var(--lp-h1) * 0.7);
+  width: calc(1em + 20px); height: calc(1em + 20px);
   display: flex; align-items: center; justify-content: center;
-  color: var(--m12-accent); line-height: 1;
+  color: var(--m12-accent); background: #D6E4FE; border-radius: 50%; line-height: 1;
 }
-.lp-label { margin: 0; font-size: var(--lp-h2); font-weight: 700; line-height: 1.15; letter-spacing: -0.01em; }
+.lp-label { margin: 0; font-size: 22px; font-weight: 400; line-height: 1.3; }
 .lp-sub { margin: 4px 0 0; font-size: 16px; color: var(--m12-accent); line-height: 1.45; }
 
 .lp-price {
@@ -93,10 +95,10 @@ body.bg-wave .m12-card--inline, body.bg-transparent .m12-card--inline { box-shad
 .m12-card--inline.m12-success { padding: 32px 0 8px; }
 
 @media (max-width: 768px) {
-  :root { --lp-h1: 48px; --lp-h2: 26px; }
+  :root { --lp-h1: 48px; }
 }
 @media (max-width: 480px) {
-  :root { --lp-h1: 38px; --lp-h2: 22px; }
+  :root { --lp-h1: 38px; }
   .m12--flow { padding: 24px 16px 40px; }
   .lp-lede { font-size: 19px; }
   .lp-item { gap: 14px; }
