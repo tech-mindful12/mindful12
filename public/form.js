@@ -385,6 +385,8 @@
       preview_type: els.previewType.value,
       url_params: allParams,
       page_url: pageUrl || null,
+      redirect: params.get('redirect') || null, // validated server-side against the allowed hosts
+      website: $('website') ? $('website').value : '',
     };
 
     els.submit.disabled = true; els.submit.classList.add('loading');
@@ -410,8 +412,8 @@
     if (window.parent !== window) {
       window.parent.postMessage({ type: 'mindful12:submitted', id: body.id, matched_company: body.matched_company }, '*');
     }
-    // URL param wins; otherwise the server's REDIRECT_URL (with {id}/{email}/{preview_type} filled in).
-    var redirect = params.get('redirect') || body.redirect_url;
+    // Server decides: the ?redirect= param if it's on an allowed host, else REDIRECT_URL with placeholders filled.
+    var redirect = body.redirect_url;
     if (redirect && /^https?:\/\//i.test(redirect)) {
       try { window.top.location.href = redirect; } catch (e) { window.location.href = redirect; }
       return;
