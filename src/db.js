@@ -41,12 +41,14 @@ async function migrate() {
       website     TEXT,
       invite_link TEXT,                              -- where this company's people land after submitting
       passcode    TEXT,                              -- reserved; not used by the form yet
+      tag         TEXT,                              -- free-text label for the admin's own grouping
       active      BOOLEAN NOT NULL DEFAULT TRUE,
       created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
       updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
     );
     ALTER TABLE registered_companies ADD COLUMN IF NOT EXISTS invite_link TEXT;
     ALTER TABLE registered_companies ADD COLUMN IF NOT EXISTS passcode TEXT;
+    ALTER TABLE registered_companies ADD COLUMN IF NOT EXISTS tag TEXT;
     CREATE UNIQUE INDEX IF NOT EXISTS registered_companies_name_key ON registered_companies (lower(name));
     CREATE UNIQUE INDEX IF NOT EXISTS registered_companies_domain_key ON registered_companies (lower(domain));
 
@@ -111,29 +113,29 @@ async function listCompaniesForRouting() {
 /** Admin view: all columns, inactive included. */
 async function listCompaniesAdmin() {
   const { rows } = await pool.query(
-    `SELECT id, name, domain, website, invite_link, passcode, active, created_at, updated_at
+    `SELECT id, name, domain, website, invite_link, passcode, tag, active, created_at, updated_at
        FROM registered_companies ORDER BY active DESC, name`
   );
   return rows;
 }
 
-async function addCompany({ name, domain, website, invite_link, passcode }) {
+async function addCompany({ name, domain, website, invite_link, passcode, tag }) {
   const { rows } = await pool.query(
-    `INSERT INTO registered_companies (name, domain, website, invite_link, passcode)
-     VALUES ($1, $2, $3, $4, $5)
-     RETURNING id, name, domain, website, invite_link, passcode, active, created_at, updated_at`,
-    [name, domain, website || null, invite_link || null, passcode || null]
+    `INSERT INTO registered_companies (name, domain, website, invite_link, passcode, tag)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     RETURNING id, name, domain, website, invite_link, passcode, tag, active, created_at, updated_at`,
+    [name, domain, website || null, invite_link || null, passcode || null, tag || null]
   );
   return rows[0];
 }
 
-async function updateCompany(id, { name, domain, website, invite_link, passcode, active }) {
+async function updateCompany(id, { name, domain, website, invite_link, passcode, tag, active }) {
   const { rows } = await pool.query(
     `UPDATE registered_companies
-        SET name = $2, domain = $3, website = $4, invite_link = $5, passcode = $6, active = $7, updated_at = now()
+        SET name = $2, domain = $3, website = $4, invite_link = $5, passcode = $6, tag = $7, active = $8, updated_at = now()
       WHERE id = $1
-      RETURNING id, name, domain, website, invite_link, passcode, active, created_at, updated_at`,
-    [id, name, domain, website || null, invite_link || null, passcode || null, active]
+      RETURNING id, name, domain, website, invite_link, passcode, tag, active, created_at, updated_at`,
+    [id, name, domain, website || null, invite_link || null, passcode || null, tag || null, active]
   );
   return rows[0] || null;
 }

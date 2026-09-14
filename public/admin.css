@@ -54,6 +54,7 @@
 .ad-table input[type="checkbox"] { accent-color: var(--m12-accent); width: 16px; height: 16px; }
 .ad-table td[data-col="invite_link"] { min-width: 260px; }
 .ad-table td[data-col="name"] { min-width: 180px; }
+.ad-table td[data-col="tag"] { min-width: 110px; }
 
 .ad-actions { white-space: nowrap; text-align: right; }
 .ad-link {

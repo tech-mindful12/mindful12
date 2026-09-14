@@ -282,6 +282,7 @@ function parseCompany(body) {
     website: str(b.website, 500),
     invite_link: str(b.invite_link, 2000),
     passcode: str(b.passcode, 200),
+    tag: str(b.tag, 100),
     active: b.active === undefined ? true : Boolean(b.active),
   };
   const errors = {};
