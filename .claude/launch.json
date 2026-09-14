@@ -11,7 +11,9 @@
         "DATABASE_URL": "memory",
         "PORT": "3000",
         "GHL_WEBHOOK_URL": "http://localhost:3000/health",
-        "GHL_CALLBACK_SECRET": "devsecret"
+        "ADMIN_PASSWORD": "devpass",
+        "REDIRECT_URL_INDEPENDENT": "https://mindful12.com/independent",
+        "REDIRECT_URL_HR": "https://mindful12.com/hr"
       },
       "port": 3000
     }

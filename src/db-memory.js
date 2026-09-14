@@ -14,24 +14,55 @@ const pool = { query: async () => ({ rows: [] }) };
 async function migrate(seed) {
   for (const c of seed) {
     if (!companies.some((x) => x.name.toLowerCase() === c.name.toLowerCase())) {
-      companies.push({ id: nextCompanyId++, active: true, ...c });
+      companies.push({ id: nextCompanyId++, active: true, invite_link: null, passcode: null, created_at: new Date(), updated_at: new Date(), ...c });
     }
   }
   console.warn('[db] Using in-memory database — submissions will NOT persist');
 }
 
+const byName = (a, b) => a.name.localeCompare(b.name);
+const publicShape = ({ id, name, domain, website }) => ({ id, name, domain, website });
+const routingShape = ({ id, name, domain, website, invite_link }) => ({ id, name, domain, website, invite_link });
+
 async function listCompanies() {
-  return companies.filter((c) => c.active).map(({ id, name, domain, website }) => ({ id, name, domain, website }))
-    .sort((a, b) => a.name.localeCompare(b.name));
+  return companies.filter((c) => c.active).sort(byName).map(publicShape);
 }
 
-async function addCompany({ name, domain, website }) {
-  if (companies.some((c) => c.name.toLowerCase() === name.toLowerCase() || c.domain.toLowerCase() === domain.toLowerCase())) {
+async function listCompaniesForRouting() {
+  return companies.filter((c) => c.active).sort(byName).map(routingShape);
+}
+
+async function listCompaniesAdmin() {
+  return companies.slice().sort((a, b) => (b.active - a.active) || byName(a, b)).map((c) => ({ ...c }));
+}
+
+function assertUnique({ name, domain }, exceptId) {
+  if (companies.some((c) => c.id !== exceptId && (c.name.toLowerCase() === name.toLowerCase() || c.domain.toLowerCase() === domain.toLowerCase()))) {
     const err = new Error('duplicate'); err.code = '23505'; throw err;
   }
-  const row = { id: nextCompanyId++, name, domain, website: website || null, active: true };
+}
+
+async function addCompany({ name, domain, website, invite_link, passcode }) {
+  assertUnique({ name, domain });
+  const row = { id: nextCompanyId++, name, domain, website: website || null, invite_link: invite_link || null, passcode: passcode || null, active: true, created_at: new Date(), updated_at: new Date() };
   companies.push(row);
-  return { id: row.id, name, domain, website: row.website };
+  return { ...row };
+}
+
+async function updateCompany(id, { name, domain, website, invite_link, passcode, active }) {
+  const row = companies.find((c) => c.id === id);
+  if (!row) return null;
+  assertUnique({ name, domain }, id);
+  Object.assign(row, { name, domain, website: website || null, invite_link: invite_link || null, passcode: passcode || null, active, updated_at: new Date() });
+  return { ...row };
+}
+
+async function deleteCompany(id) {
+  const i = companies.findIndex((c) => c.id === id);
+  if (i === -1) return false;
+  companies.splice(i, 1);
+  submissions.forEach((s) => { if (s.matched_company_id === id) s.matched_company_id = null; });
+  return true;
 }
 
 async function insertSubmission(s) {
@@ -45,28 +76,12 @@ async function updateWebhookStatus(id, status, response) {
   if (row) { row.ghl_webhook_status = status; row.ghl_webhook_response = response || null; }
 }
 
-async function getSubmissionStatus(id, token) {
-  const s = submissions.find((x) => x.id === id && x.wait_token === token);
-  return s ? { id: s.id, private_channel_link: s.private_channel_link || null, ghl_webhook_status: s.ghl_webhook_status, created_at: s.created_at } : null;
-}
-
-async function setPrivateLink({ submissionId, email, link, contactId }) {
-  const candidates = submissions
-    .filter((s) => (submissionId ? s.id === submissionId : email && s.email.toLowerCase() === email.toLowerCase()))
-    .sort((a, b) => (a.private_channel_link ? 1 : 0) - (b.private_channel_link ? 1 : 0) || b.created_at - a.created_at);
-  const row = candidates[0];
-  if (!row) return null;
-  row.private_channel_link = link;
-  row.ghl_contact_id = contactId || row.ghl_contact_id || null;
-  row.link_received_at = new Date();
-  return { id: row.id, email: row.email };
-}
-
 async function listSubmissions({ limit = 100, offset = 0 } = {}) {
   return submissions.slice().reverse().slice(offset, offset + limit);
 }
 
 module.exports = {
-  pool, migrate, listCompanies, addCompany, insertSubmission, updateWebhookStatus,
-  getSubmissionStatus, setPrivateLink, listSubmissions,
+  pool, migrate,
+  listCompanies, listCompaniesForRouting, listCompaniesAdmin, addCompany, updateCompany, deleteCompany,
+  insertSubmission, updateWebhookStatus, listSubmissions,
 };

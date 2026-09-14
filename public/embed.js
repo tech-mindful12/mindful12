@@ -5,7 +5,7 @@
  *   <script src="https://YOUR-APP.up.railway.app/embed.js"></script>
  *
  * data-page="preview" loads the multi-step walkthrough that ends with the form (preview.html)
- * instead of the bare form. Any other data-* attribute becomes a URL parameter on the form
+ * instead of the bare form; data-page="admin" loads the registered-companies admin panel. Any other data-* attribute becomes a URL parameter on the form
  * (data-preview-type -> preview_type, data-bg -> bg, data-redirect -> redirect, ...).
  * Query parameters on the funnel page URL (?preview_type=..., ?email=..., utm_*) are forwarded too,
  * and win over data-* attributes, so one page can serve several preview types via its link.
@@ -20,7 +20,8 @@
     if (container.getAttribute('data-mounted')) return;
     container.setAttribute('data-mounted', '1');
 
-    var page = container.getAttribute('data-page') === 'preview' ? '/preview.html' : '/';
+    var pages = { preview: '/preview.html', admin: '/admin' };
+    var page = pages[container.getAttribute('data-page')] || '/';
     var params = new URLSearchParams();
     Array.prototype.forEach.call(container.attributes, function (a) {
       if (a.name.indexOf('data-') === 0 && a.name !== 'data-mounted' && a.name !== 'data-page') {

@@ -1,25 +1,17 @@
 'use strict';
 
 const path = require('path');
-const crypto = require('crypto');
 const express = require('express');
 const db = require('./db');
 const ghl = require('./ghl');
 const security = require('./security');
+const adminAuth = require('./admin-auth');
 const match = require('../public/match.js');
 const locations = require('../data/us-locations.json');
 
 const PORT = process.env.PORT || 3000;
 const GHL_WEBHOOK_URL = ghl.config.webhookUrl;
 const ADMIN_API_KEY = process.env.ADMIN_API_KEY || '';
-// Fallback destination after submit if GHL doesn't send a private link back in time.
-// May contain {id}, {email}, {preview_type}, {company_id}.
-const REDIRECT_URL = process.env.REDIRECT_URL || '';
-// Shared secret GHL's workflow webhook must send (header X-Callback-Secret or ?secret=) when posting the private link back.
-const GHL_CALLBACK_SECRET = process.env.GHL_CALLBACK_SECRET || '';
-// GHL custom field holding the visitor's private group URL.
-const PRIVATE_LINK_FIELD_ID = process.env.GHL_PRIVATE_LINK_FIELD_ID || 'ZVPibuKKScCRcqDQWFFL';
-const PRIVATE_LINK_FIELD_KEY = 'private_channel_link';
 
 const STATE_CODES = new Set(locations.states.map((s) => s.code));
 
@@ -28,6 +20,18 @@ const PREVIEW_TYPES = ['executive', 'employee', 'hr', 'independent'];
 const DEFAULT_PREVIEW_TYPE = 'independent';
 const COMPANY_REQUIRED_FOR = new Set(['executive', 'employee', 'hr']);
 
+/**
+ * Where people go after submitting, in priority order:
+ *   1. the matched registered company's invite_link
+ *   2. REDIRECT_URL_<PREVIEW_TYPE>  (REDIRECT_URL_INDEPENDENT, REDIRECT_URL_HR, _EXECUTIVE, _EMPLOYEE)
+ *   3. REDIRECT_URL                 (generic fallback)
+ * Env values may contain {id}, {email}, {preview_type}, {company_id}.
+ */
+const REDIRECT_URL = process.env.REDIRECT_URL || '';
+const REDIRECT_BY_TYPE = Object.fromEntries(
+  PREVIEW_TYPES.map((t) => [t, process.env[`REDIRECT_URL_${t.toUpperCase()}`] || ''])
+);
+
 const app = express();
 app.set('trust proxy', 1); // exactly one hop (Railway's proxy) so req.ip can't be spoofed via X-Forwarded-For
 app.disable('x-powered-by');
@@ -35,7 +39,7 @@ app.disable('x-powered-by');
 app.use(express.json({ limit: '64kb' }));
 app.use(express.urlencoded({ extended: false, limit: '64kb' }));
 
-// Only the client's funnel domains (and this app itself) may iframe the form.
+// Only the client's funnel domains (and this app itself) may iframe the form / admin panel.
 app.use((req, res, next) => {
   res.setHeader('Content-Security-Policy', `frame-ancestors ${security.frameAncestors()}`);
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -43,7 +47,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// The form runs same-origin inside the iframe, so CORS is only opened for allowed funnel domains.
+// The pages run same-origin inside the iframe, so CORS is only opened for allowed funnel domains.
 app.use('/api', (req, res, next) => {
   const origin = req.get('origin');
   let originHost = '';
@@ -51,32 +55,19 @@ app.use('/api', (req, res, next) => {
   if (origin && security.hostAllowed(originHost)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Vary', 'Origin');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   }
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });
 
-// The loading screen polls this every 2s, so it sits above the general /api limiter with its own, looser one.
-app.get('/api/submissions/:id/status', security.rateLimit({ windowMs: 60 * 1000, max: 600 }), async (req, res, next) => {
-  const id = parseInt(req.params.id, 10);
-  const token = str(req.query.token, 64);
-  if (!id || !token) return res.status(400).json({ ok: false, error: 'Missing id or token' });
-  try {
-    const row = await db.getSubmissionStatus(id, token);
-    if (!row) return res.status(404).json({ ok: false, error: 'Not found' });
-    res.setHeader('Cache-Control', 'no-store');
-    if (row.private_channel_link) return res.json({ ok: true, status: 'ready', redirect_url: row.private_channel_link });
-    if (row.ghl_webhook_status === 'failed' || row.ghl_webhook_status === 'skipped') {
-      return res.json({ ok: true, status: 'unavailable', reason: row.ghl_webhook_status }); // GHL never got it; don't make them wait
-    }
-    res.json({ ok: true, status: 'pending' });
-  } catch (err) { next(err); }
-});
-
 app.use('/api', security.rateLimit({ windowMs: 60 * 1000, max: 120 }));
 const submitLimiter = security.rateLimit({ windowMs: 10 * 60 * 1000, max: 30, message: 'Too many submissions from this network. Please try again in a few minutes.' });
+const loginLimiter = security.rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: 'Too many sign-in attempts. Please wait 15 minutes.' });
+
+// Pretty URL for the admin panel.
+app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'admin.html')));
 
 // Form files revalidate on every load (so updates reach live embeds immediately); images cache for a day.
 app.use(express.static(path.join(__dirname, '..', 'public'), {
@@ -93,6 +84,7 @@ app.get('/health', async (req, res) => {
       ok: true,
       db: 'up',
       ghl: { webhook: GHL_WEBHOOK_URL ? 'configured' : 'missing', api: ghl.isApiConfigured() ? 'configured' : 'missing' },
+      admin: adminAuth.isConfigured() ? 'configured' : 'missing',
     });
   } catch (err) {
     res.status(503).json({ ok: false, db: 'down', error: err.message });
@@ -103,7 +95,7 @@ app.get('/health', async (req, res) => {
 
 app.get('/api/companies', async (req, res, next) => {
   try {
-    res.json(await db.listCompanies());
+    res.json(await db.listCompanies()); // id/name/domain/website only — never invite links or passcodes
   } catch (err) { next(err); }
 });
 
@@ -154,7 +146,7 @@ app.post('/api/submissions', submitLimiter, async (req, res, next) => {
 
   try {
     // Resolve the registered company. The server is the final authority, whatever the browser sent.
-    const companies = await db.listCompanies();
+    const companies = await db.listCompaniesForRouting();
     const result = match.match(companies, input.company_name, input.email);
     let matched = null, method = 'none', confidence = null;
 
@@ -170,31 +162,31 @@ app.post('/api/submissions', submitLimiter, async (req, res, next) => {
       confidence = result.best.score;
     }
 
-    const waitToken = crypto.randomBytes(24).toString('base64url');
+    const redirectUrl = resolveRedirect({ matched, input, id: null });
+
     const row = await db.insertSubmission({
       ...input,
-      wait_token: waitToken,
       company_name: input.company_name || null,
       matched_company_id: matched ? matched.id : null,
       matched_company_name: matched ? matched.name : null,
       match_method: method,
       match_confidence: confidence,
       email_domain: match.emailDomain(input.email),
+      redirect_url: redirectUrl,
       ip: req.ip,
       user_agent: str(req.get('user-agent'), 500),
     });
 
+    // Placeholders like {id} need the row id, so fill them in now.
+    const finalRedirect = fillPlaceholders(redirectUrl, { id: row.id, email: input.email, preview_type: input.preview_type, company_id: matched ? matched.id : '' });
+
     // Respond immediately; the webhook runs after and records its own outcome.
-    // wait=true tells the form to show the loading screen and poll for the private link GHL sends back.
     res.status(201).json({
       ok: true,
       id: row.id,
-      token: waitToken,
-      wait: Boolean(GHL_WEBHOOK_URL),
       matched_company: matched ? { id: matched.id, name: matched.name } : null,
       match_method: method,
-      redirect_url: security.safeRedirect(input.redirect)
-        || buildRedirect({ id: row.id, email: input.email, preview_type: input.preview_type, company_id: matched ? matched.id : '' }),
+      redirect_url: finalRedirect,
     });
 
     sendToGhl(row.id, {
@@ -214,11 +206,23 @@ app.post('/api/submissions', submitLimiter, async (req, res, next) => {
       city: input.city,
       state: input.state,
       preview_type: input.preview_type,
+      redirect_url: finalRedirect,
       page_url: input.page_url,
       url_params: input.url_params,
     }).catch((err) => console.error('[ghl] unexpected error', err));
   } catch (err) { next(err); }
 });
+
+/** Company invite link > ?redirect= (allowed hosts only) > per-preview-type env > generic env. */
+function resolveRedirect({ matched, input }) {
+  if (matched && matched.invite_link && isHttpsUrl(matched.invite_link)) return matched.invite_link;
+  return security.safeRedirect(input.redirect) || REDIRECT_BY_TYPE[input.preview_type] || REDIRECT_URL || null;
+}
+
+function fillPlaceholders(url, vars) {
+  if (!url) return null;
+  return url.replace(/\{(\w+)\}/g, (m, key) => (key in vars ? encodeURIComponent(vars[key]) : m));
+}
 
 /** Keep url_params bounded: at most 40 keys, short strings only. */
 function sanitizeParams(p) {
@@ -226,11 +230,6 @@ function sanitizeParams(p) {
   const out = {};
   for (const key of Object.keys(p).slice(0, 40)) out[str(key, 100)] = str(p[key], 500);
   return Object.keys(out).length ? out : null;
-}
-
-function buildRedirect(vars) {
-  if (!REDIRECT_URL) return null;
-  return REDIRECT_URL.replace(/\{(\w+)\}/g, (m, key) => (key in vars ? encodeURIComponent(vars[key]) : m));
 }
 
 async function sendToGhl(submissionId, payload) {
@@ -258,85 +257,85 @@ async function sendToGhl(submissionId, payload) {
   }
 }
 
-// ---------- GHL -> Railway callback ----------
+// ---------- Admin panel API (password login -> Bearer session token) ----------
 
-/** Walk the callback payload for the private link: by field id, by field key, or nested under contact/customData. */
-function findPrivateLink(obj, depth = 0) {
-  if (!obj || typeof obj !== 'object' || depth > 4) return '';
-  for (const [key, value] of Object.entries(obj)) {
-    const k = key.toLowerCase().replace(/[^a-z0-9]/g, '');
-    if ((key === PRIVATE_LINK_FIELD_ID || k.endsWith(PRIVATE_LINK_FIELD_KEY.replace(/_/g, ''))) && typeof value === 'string') {
-      return value.trim();
-    }
-    // GHL sometimes ships custom fields as [{ id, value }]
-    if (Array.isArray(value)) {
-      for (const item of value) {
-        if (item && item.id === PRIVATE_LINK_FIELD_ID && typeof item.value === 'string') return item.value.trim();
-      }
-    }
-  }
-  for (const value of Object.values(obj)) {
-    if (value && typeof value === 'object') { const found = findPrivateLink(value, depth + 1); if (found) return found; }
-  }
-  return '';
+app.post('/api/admin/login', loginLimiter, (req, res) => {
+  if (!adminAuth.isConfigured()) return res.status(503).json({ ok: false, error: 'Admin panel disabled (ADMIN_PASSWORD not set)' });
+  const session = adminAuth.login(str(req.body.password, 500));
+  if (!session) return res.status(401).json({ ok: false, error: 'Incorrect password' });
+  res.json({ ok: true, ...session });
+});
+
+app.get('/api/admin/session', adminAuth.requireSession, (req, res) => res.json({ ok: true }));
+
+/** Accepts either an admin-panel session or the ADMIN_API_KEY header (for scripts). */
+function requireAdmin(req, res, next) {
+  if (ADMIN_API_KEY && security.safeEqual(req.get('x-admin-key'), ADMIN_API_KEY)) return next();
+  return adminAuth.requireSession(req, res, next);
 }
 
-/**
- * GHL workflow -> Webhook action, fired when the private_channel_link custom field is updated.
- * Send header X-Callback-Secret: <GHL_CALLBACK_SECRET>. The body should carry the contact's email
- * (and submission_id if that custom field exists) plus the link.
- */
-app.post('/api/ghl/callback', async (req, res, next) => {
-  if (!GHL_CALLBACK_SECRET) return res.status(503).json({ ok: false, error: 'GHL_CALLBACK_SECRET not configured' });
-  const provided = req.get('x-callback-secret') || str(req.query.secret, 200);
-  if (!security.safeEqual(provided, GHL_CALLBACK_SECRET)) return res.status(401).json({ ok: false, error: 'Unauthorized' });
+function parseCompany(body) {
+  const b = body || {};
+  const c = {
+    name: str(b.name),
+    domain: match.rootDomain(str(b.domain)),
+    website: str(b.website, 500),
+    invite_link: str(b.invite_link, 2000),
+    passcode: str(b.passcode, 200),
+    active: b.active === undefined ? true : Boolean(b.active),
+  };
+  const errors = {};
+  if (!c.name) errors.name = 'Name is required';
+  if (!c.domain || !c.domain.includes('.')) errors.domain = 'Enter a domain like example.com';
+  if (c.website && !/^https?:\/\//i.test(c.website)) c.website = 'https://' + c.website;
+  if (c.invite_link && !isHttpsUrl(c.invite_link)) errors.invite_link = 'Invite link must start with https://';
+  return { company: c, errors };
+}
 
-  const b = req.body || {};
-  const c = b.contact && typeof b.contact === 'object' ? b.contact : {};
-  const cd = b.customData && typeof b.customData === 'object' ? b.customData : {};
-  const link = findPrivateLink(b);
-  const email = str(cd.email || b.email || c.email, 200).toLowerCase();
-  const submissionId = parseInt(cd.submission_id || b.submission_id || c.submission_id, 10) || null;
-  const contactId = str(b.contact_id || b.id || c.id || cd.contact_id, 100) || null;
+function handleCompanyError(err, res, next) {
+  if (err.code === '23505') return res.status(409).json({ ok: false, error: 'A company with that name or domain already exists' });
+  next(err);
+}
 
-  if (!link) return res.status(422).json({ ok: false, error: `No ${PRIVATE_LINK_FIELD_KEY} in payload` });
-  if (!isHttpsUrl(link)) return res.status(422).json({ ok: false, error: 'Link must be an https URL' });
-  if (!submissionId && !email) return res.status(422).json({ ok: false, error: 'Need submission_id or email to match the submission' });
+app.get('/api/admin/companies', requireAdmin, async (req, res, next) => {
+  try { res.json({ ok: true, companies: await db.listCompaniesAdmin() }); } catch (err) { next(err); }
+});
 
+app.post('/api/admin/companies', requireAdmin, async (req, res, next) => {
+  const { company, errors } = parseCompany(req.body);
+  if (Object.keys(errors).length) return res.status(422).json({ ok: false, errors });
   try {
-    const matched = await db.setPrivateLink({ submissionId, email, link, contactId });
-    if (!matched) {
-      console.warn(`[ghl] callback: no submission matched (submission_id=${submissionId} email=${email})`);
-      return res.status(404).json({ ok: false, error: 'No matching submission' });
-    }
-    res.json({ ok: true, submission_id: matched.id });
+    res.status(201).json({ ok: true, company: await db.addCompany(company) });
+  } catch (err) { handleCompanyError(err, res, next); }
+});
+
+app.put('/api/admin/companies/:id', requireAdmin, async (req, res, next) => {
+  const id = parseInt(req.params.id, 10);
+  const { company, errors } = parseCompany(req.body);
+  if (!id) return res.status(400).json({ ok: false, error: 'Bad id' });
+  if (Object.keys(errors).length) return res.status(422).json({ ok: false, errors });
+  try {
+    const updated = await db.updateCompany(id, company);
+    if (!updated) return res.status(404).json({ ok: false, error: 'Not found' });
+    res.json({ ok: true, company: updated });
+  } catch (err) { handleCompanyError(err, res, next); }
+});
+
+app.delete('/api/admin/companies/:id', requireAdmin, async (req, res, next) => {
+  const id = parseInt(req.params.id, 10);
+  if (!id) return res.status(400).json({ ok: false, error: 'Bad id' });
+  try {
+    const gone = await db.deleteCompany(id);
+    if (!gone) return res.status(404).json({ ok: false, error: 'Not found' });
+    res.json({ ok: true });
   } catch (err) { next(err); }
 });
 
-// ---------- Admin API (X-Admin-Key header) ----------
-
-function requireAdmin(req, res, next) {
-  if (!ADMIN_API_KEY) return res.status(404).json({ error: 'Admin API disabled (ADMIN_API_KEY not set)' });
-  if (!security.safeEqual(req.get('x-admin-key'), ADMIN_API_KEY)) return res.status(401).json({ error: 'Unauthorized' });
-  next();
-}
-
-app.post('/api/companies', requireAdmin, async (req, res, next) => {
-  const name = str(req.body.name), domain = match.rootDomain(str(req.body.domain)), website = str(req.body.website, 500);
-  if (!name || !domain) return res.status(422).json({ error: 'name and domain are required' });
-  try {
-    res.status(201).json(await db.addCompany({ name, domain, website }));
-  } catch (err) {
-    if (err.code === '23505') return res.status(409).json({ error: 'A company with that name or domain already exists' });
-    next(err);
-  }
-});
-
-app.get('/api/submissions', requireAdmin, async (req, res, next) => {
+app.get('/api/admin/submissions', requireAdmin, async (req, res, next) => {
   try {
     const limit = Math.min(parseInt(req.query.limit, 10) || 100, 500);
     const offset = parseInt(req.query.offset, 10) || 0;
-    res.json(await db.listSubmissions({ limit, offset }));
+    res.json({ ok: true, submissions: await db.listSubmissions({ limit, offset }) });
   } catch (err) { next(err); }
 });
 
