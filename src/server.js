@@ -15,10 +15,10 @@ const REDIRECT_URL = process.env.REDIRECT_URL || '';
 
 const STATE_CODES = new Set(locations.states.map((s) => s.code));
 
-// Preview types (set via URL on the embed). Company name is only collected for the first two.
+// Preview types (set via URL on the embed). Company name is optional only for independent visitors.
 const PREVIEW_TYPES = ['executive', 'employee', 'hr', 'independent'];
 const DEFAULT_PREVIEW_TYPE = 'independent';
-const COMPANY_REQUIRED_FOR = new Set(['executive', 'employee']);
+const COMPANY_REQUIRED_FOR = new Set(['executive', 'employee', 'hr']);
 
 const app = express();
 app.set('trust proxy', true); // Railway sits behind a proxy; needed for req.ip

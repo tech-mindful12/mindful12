@@ -28,7 +28,7 @@
       </div>
 
       <div class="m12-field" id="company-field">
-        <label for="company_name">Company name</label>
+        <label for="company_name">Company name <span class="m12-optional" id="company-optional" hidden>(optional)</span></label>
         <div class="m12-combo" id="company-combo">
           <input id="company_name" name="company_name" type="text" required autocomplete="organization"
                  placeholder="Start typing your company" aria-autocomplete="list" aria-expanded="false" aria-controls="company-list">
@@ -37,6 +37,7 @@
         <input type="hidden" id="company_id" name="company_id" value="">
         <div class="m12-hint" id="company-suggest" hidden></div>
         <div class="m12-matched" id="company-matched" hidden></div>
+        <div class="m12-help" id="company-help" hidden>If you don’t have a company, leave this blank.</div>
         <div class="m12-error" data-for="company_name"></div>
       </div>
 
