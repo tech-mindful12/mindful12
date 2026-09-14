@@ -45,8 +45,28 @@ async function updateWebhookStatus(id, status, response) {
   if (row) { row.ghl_webhook_status = status; row.ghl_webhook_response = response || null; }
 }
 
+async function getSubmissionStatus(id, token) {
+  const s = submissions.find((x) => x.id === id && x.wait_token === token);
+  return s ? { id: s.id, private_channel_link: s.private_channel_link || null, ghl_webhook_status: s.ghl_webhook_status, created_at: s.created_at } : null;
+}
+
+async function setPrivateLink({ submissionId, email, link, contactId }) {
+  const candidates = submissions
+    .filter((s) => (submissionId ? s.id === submissionId : email && s.email.toLowerCase() === email.toLowerCase()))
+    .sort((a, b) => (a.private_channel_link ? 1 : 0) - (b.private_channel_link ? 1 : 0) || b.created_at - a.created_at);
+  const row = candidates[0];
+  if (!row) return null;
+  row.private_channel_link = link;
+  row.ghl_contact_id = contactId || row.ghl_contact_id || null;
+  row.link_received_at = new Date();
+  return { id: row.id, email: row.email };
+}
+
 async function listSubmissions({ limit = 100, offset = 0 } = {}) {
   return submissions.slice().reverse().slice(offset, offset + limit);
 }
 
-module.exports = { pool, migrate, listCompanies, addCompany, insertSubmission, updateWebhookStatus, listSubmissions };
+module.exports = {
+  pool, migrate, listCompanies, addCompany, insertSubmission, updateWebhookStatus,
+  getSubmissionStatus, setPrivateLink, listSubmissions,
+};

@@ -97,6 +97,14 @@
       <button type="submit" class="m12-btn" id="submit-btn"><span>Create My Account</span></button>
     </form>
 
+    <div class="m12-card m12-waiting" id="m12-waiting" hidden>
+      <div class="m12-spinner" aria-hidden="true"></div>
+      <h2 id="waiting-text">Creating your account…</h2>
+      <p>Hang tight, this only takes a moment.</p>
+      <p class="m12-waiting-slow" id="waiting-slow" hidden>We’re still setting things up — you’ll also receive your link by email shortly.</p>
+      <button type="button" class="m12-btn m12-btn--secondary" id="waiting-continue" hidden><span>Continue</span></button>
+    </div>
+
     <div class="m12-card m12-success" id="m12-success" hidden>
       <div class="m12-check" aria-hidden="true">
         <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
