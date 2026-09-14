@@ -19,6 +19,7 @@ Railway service for Mindful12: an embeddable intake form (stored in Postgres, fo
    | `GHL_WEBHOOK_URL` | GHL inbound-webhook URL that receives each submission |
    | `GHL_LOCATION_ID` | GHL sub-account (location) ID |
    | `GHL_PIT_TOKEN` | GHL Private Integration Token |
+   | `ALLOWED_HOSTS` | Hosts allowed to embed the form / be redirect targets (default `mindful12.mycoursecreator360.com, mindful12.com, *.mindful12.com`) |
    | `REDIRECT_URL` | Where to send people after submitting. Placeholders `{id}`, `{email}`, `{preview_type}`, `{company_id}` are filled per submission, e.g. `https://funnel.page/next?sid={id}&preview_type={preview_type}`. Blank = built-in thank-you card |
    | `ADMIN_API_KEY` | any long random string — enables the admin endpoints (optional) |
 
@@ -60,7 +61,7 @@ You can also iframe `https://YOUR-APP/?preview_type=...` directly. `https://YOUR
 | `bg` | `white` (default), `wave` (branded background image), `transparent` |
 | `button` | Override the button label (default "Create My Account") |
 | `success` | Override the thank-you text (only shown when no redirect is configured) |
-| `redirect` | Override `REDIRECT_URL` for this embed (the *top* window is redirected) |
+| `redirect` | Override `REDIRECT_URL` for this embed — only honoured for hosts in `ALLOWED_HOSTS` (the *top* window is redirected) |
 | anything else (`utm_*`, …) | Stored in `form_submissions.url_params` and sent to GHL |
 
 ### Preview types
@@ -83,6 +84,15 @@ Messages and options live in `PREVIEW_TYPES` at the top of `public/form.js`; the
 3. **Email domain check** — if the email is on a company domain (not gmail/yahoo/etc.) that matches a registered company's domain, they're asked to confirm that company. If nothing was typed yet, it's filled in.
 4. **Submit gate** — if a suggestion is pending, submit is blocked until they choose Yes or No.
 5. **Server is the final authority** — on submit the server re-runs the matcher and records `matched_company_id`, `match_method` (`selected` | `name` | `domain` | `none`) and `match_confidence`, so borderline cases can be reviewed later.
+
+## Security notes
+
+- Only hosts in `ALLOWED_HOSTS` (plus the app itself) can iframe the form (`Content-Security-Policy: frame-ancestors`) or be `?redirect=` targets; the API only answers cross-origin requests from those hosts.
+- `POST /api/submissions` is rate-limited (30 per IP per 10 min; 120 API requests per IP per minute) and has a honeypot field (`website`) — bots that fill it get a fake success and nothing is stored or sent to GHL.
+- All DB access is parameterized; user input is never rendered as HTML; secrets stay in Railway env vars and never reach the browser.
+- `trust proxy` is set to one hop so `req.ip` can't be spoofed with `X-Forwarded-For`.
+- The embed shows a "taking longer than usual" message if the app doesn't respond within 10s.
+- `GET /api/companies` is intentionally public (the dropdown needs it) — it reveals registered company names and domains.
 
 ## Database
 

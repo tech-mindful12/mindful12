@@ -37,9 +37,17 @@
     iframe.setAttribute('allowtransparency', 'true');
     container.appendChild(iframe);
 
+    // If the app never reports its height (down, blocked, very slow) tell the visitor instead of showing a blank box.
+    var fallback = document.createElement('p');
+    fallback.style.cssText = 'font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#0D2158;text-align:center;padding:16px;';
+    fallback.textContent = 'The form is taking longer than usual to load. Please refresh the page or try again in a moment.';
+    var fallbackTimer = setTimeout(function () { container.appendChild(fallback); }, 10000);
+
     window.addEventListener('message', function (e) {
       if (e.source !== iframe.contentWindow || !e.data) return;
       if (e.data.type === 'mindful12:height' && e.data.height) {
+        clearTimeout(fallbackTimer);
+        if (fallback.parentNode) fallback.parentNode.removeChild(fallback);
         iframe.style.height = Math.ceil(e.data.height) + 'px';
         iframe.style.minHeight = '0';
       }

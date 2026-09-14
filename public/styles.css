@@ -213,5 +213,7 @@ select { padding-right: 36px; cursor: pointer; }
 .m12-success h2 { margin: 0 0 8px; font-size: 22px; }
 .m12-success p { margin: 0; color: var(--m12-muted); }
 
+.m12-hp { position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
+
 /* Screen-reader only */
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }

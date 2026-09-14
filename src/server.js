@@ -4,6 +4,7 @@ const path = require('path');
 const express = require('express');
 const db = require('./db');
 const ghl = require('./ghl');
+const security = require('./security');
 const match = require('../public/match.js');
 const locations = require('../data/us-locations.json');
 
@@ -21,26 +22,37 @@ const DEFAULT_PREVIEW_TYPE = 'independent';
 const COMPANY_REQUIRED_FOR = new Set(['executive', 'employee', 'hr']);
 
 const app = express();
-app.set('trust proxy', true); // Railway sits behind a proxy; needed for req.ip
+app.set('trust proxy', 1); // exactly one hop (Railway's proxy) so req.ip can't be spoofed via X-Forwarded-For
 app.disable('x-powered-by');
 
 app.use(express.json({ limit: '64kb' }));
 app.use(express.urlencoded({ extended: false, limit: '64kb' }));
 
-// The form is meant to be iframed inside GHL funnel pages — explicitly allow any parent.
+// Only the client's funnel domains (and this app itself) may iframe the form.
 app.use((req, res, next) => {
-  res.setHeader('Content-Security-Policy', 'frame-ancestors *');
+  res.setHeader('Content-Security-Policy', `frame-ancestors ${security.frameAncestors()}`);
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   next();
 });
 
-// CORS for the JSON API so the form could also be called from a page on another origin.
+// The form runs same-origin inside the iframe, so CORS is only opened for allowed funnel domains.
 app.use('/api', (req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Admin-Key');
+  const origin = req.get('origin');
+  let originHost = '';
+  try { originHost = origin ? new URL(origin).hostname : ''; } catch (e) { /* ignore bad origin */ }
+  if (origin && security.hostAllowed(originHost)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  }
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });
+
+app.use('/api', security.rateLimit({ windowMs: 60 * 1000, max: 120 }));
+const submitLimiter = security.rateLimit({ windowMs: 10 * 60 * 1000, max: 30, message: 'Too many submissions from this network. Please try again in a few minutes.' });
 
 // Form files revalidate on every load (so updates reach live embeds immediately); images cache for a day.
 app.use(express.static(path.join(__dirname, '..', 'public'), {
@@ -86,8 +98,12 @@ app.get('/api/locations/cities', (req, res) => {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const str = (v, max = 200) => (v == null ? '' : String(v)).trim().slice(0, max);
 
-app.post('/api/submissions', async (req, res, next) => {
+app.post('/api/submissions', submitLimiter, async (req, res, next) => {
   const b = req.body || {};
+
+  // Honeypot: a hidden field real visitors never see. Bots fill it in — pretend success, store nothing.
+  if (str(b.website)) return res.status(201).json({ ok: true, id: 0, matched_company: null, match_method: 'none', redirect_url: null });
+
   const input = {
     company_name: str(b.company_name),
     company_id: b.company_id ? parseInt(b.company_id, 10) : null,
@@ -97,8 +113,9 @@ app.post('/api/submissions', async (req, res, next) => {
     city: str(b.city, 120),
     state: str(b.state, 2).toUpperCase(),
     preview_type: PREVIEW_TYPES.includes(str(b.preview_type, 120).toLowerCase()) ? str(b.preview_type, 120).toLowerCase() : DEFAULT_PREVIEW_TYPE,
-    url_params: b.url_params && typeof b.url_params === 'object' ? b.url_params : null,
+    url_params: sanitizeParams(b.url_params),
     page_url: str(b.page_url, 2000) || null,
+    redirect: str(b.redirect, 2000),
   };
 
   const errors = {};
@@ -146,7 +163,8 @@ app.post('/api/submissions', async (req, res, next) => {
       id: row.id,
       matched_company: matched ? { id: matched.id, name: matched.name } : null,
       match_method: method,
-      redirect_url: buildRedirect({ id: row.id, email: input.email, preview_type: input.preview_type, company_id: matched ? matched.id : '' }),
+      redirect_url: security.safeRedirect(input.redirect)
+        || buildRedirect({ id: row.id, email: input.email, preview_type: input.preview_type, company_id: matched ? matched.id : '' }),
     });
 
     sendToGhl(row.id, {
@@ -171,6 +189,14 @@ app.post('/api/submissions', async (req, res, next) => {
     }).catch((err) => console.error('[ghl] unexpected error', err));
   } catch (err) { next(err); }
 });
+
+/** Keep url_params bounded: at most 40 keys, short strings only. */
+function sanitizeParams(p) {
+  if (!p || typeof p !== 'object' || Array.isArray(p)) return null;
+  const out = {};
+  for (const key of Object.keys(p).slice(0, 40)) out[str(key, 100)] = str(p[key], 500);
+  return Object.keys(out).length ? out : null;
+}
 
 function buildRedirect(vars) {
   if (!REDIRECT_URL) return null;
@@ -206,7 +232,7 @@ async function sendToGhl(submissionId, payload) {
 
 function requireAdmin(req, res, next) {
   if (!ADMIN_API_KEY) return res.status(404).json({ error: 'Admin API disabled (ADMIN_API_KEY not set)' });
-  if (req.get('x-admin-key') !== ADMIN_API_KEY) return res.status(401).json({ error: 'Unauthorized' });
+  if (!security.safeEqual(req.get('x-admin-key'), ADMIN_API_KEY)) return res.status(401).json({ error: 'Unauthorized' });
   next();
 }
 
