@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Mindful12</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-white">
+  <main class="m12">
+    <form id="m12-form" class="m12-card" novalidate autocomplete="on">
+      <div class="m12-context" id="m12-context" hidden>
+        <p><span id="context-text"></span><button type="button" class="change" id="context-change">Change?</button></p>
+        <div class="m12-chooser" id="context-chooser" hidden>
+          <fieldset>
+            <legend>Which best describes you?</legend>
+            <div id="context-options"></div>
+          </fieldset>
+          <div class="actions">
+            <button type="button" class="confirm" id="context-confirm">Confirm</button>
+            <button type="button" class="cancel" id="context-cancel">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="m12-field" id="company-field">
+        <label for="company_name">Company name</label>
+        <div class="m12-combo" id="company-combo">
+          <input id="company_name" name="company_name" type="text" required autocomplete="organization"
+                 placeholder="Start typing your company" aria-autocomplete="list" aria-expanded="false" aria-controls="company-list">
+          <ul class="m12-menu" id="company-list" role="listbox" hidden></ul>
+        </div>
+        <input type="hidden" id="company_id" name="company_id" value="">
+        <div class="m12-hint" id="company-suggest" hidden></div>
+        <div class="m12-matched" id="company-matched" hidden></div>
+        <div class="m12-error" data-for="company_name"></div>
+      </div>
+
+      <div class="m12-field">
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" required autocomplete="email" inputmode="email" placeholder="you@company.com">
+        <div class="m12-hint" id="email-suggest" hidden></div>
+        <div class="m12-error" data-for="email"></div>
+      </div>
+
+      <div class="m12-field">
+        <label for="full_name">Full name</label>
+        <input id="full_name" name="full_name" type="text" required autocomplete="name" placeholder="First and last name">
+        <div class="m12-error" data-for="full_name"></div>
+      </div>
+
+      <div class="m12-field">
+        <label for="phone">Phone</label>
+        <input id="phone" name="phone" type="tel" required autocomplete="tel" inputmode="tel" placeholder="(555) 555-5555">
+        <div class="m12-error" data-for="phone"></div>
+      </div>
+
+      <div class="m12-row">
+        <div class="m12-field">
+          <label for="state">State</label>
+          <div class="m12-select">
+            <select id="state" name="state" required autocomplete="address-level1">
+              <option value="">Select state</option>
+            </select>
+          </div>
+          <div class="m12-error" data-for="state"></div>
+        </div>
+
+        <div class="m12-field">
+          <label for="city">City</label>
+          <div class="m12-combo" id="city-combo">
+            <input id="city" name="city" type="text" required autocomplete="address-level2" placeholder="Select a state first"
+                   aria-autocomplete="list" aria-expanded="false" aria-controls="city-list" disabled>
+            <ul class="m12-menu" id="city-list" role="listbox" hidden></ul>
+          </div>
+          <div class="m12-error" data-for="city"></div>
+        </div>
+      </div>
+
+      <input type="hidden" id="preview_type" name="preview_type" value="">
+
+      <div class="m12-error m12-error-form" id="form-error"></div>
+
+      <button type="submit" class="m12-btn" id="submit-btn"><span>Create My Account</span></button>
+    </form>
+
+    <div class="m12-card m12-success" id="m12-success" hidden>
+      <div class="m12-check" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+      </div>
+      <h2>You’re all set</h2>
+      <p id="success-text">Thanks — we’ve received your details.</p>
+    </div>
+  </main>
+
+  <script src="match.js"></script>
+  <script src="form.js"></script>
+</body>
+</html>

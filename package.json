@@ -1,0 +1,19 @@
+{
+  "name": "mindful12",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mindful12 — embeddable intake form + GHL integration service",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test test/"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "pg": "^8.12.0"
+  }
+}
