@@ -93,9 +93,33 @@ app.get('/health', async (req, res) => {
 
 // ---------- Public API used by the form ----------
 
-app.get('/api/companies', async (req, res, next) => {
+/**
+ * Autocomplete + "did you mean" without ever sending the registered-company list to the browser.
+ * q needs 3+ characters to get name suggestions; email alone still answers the domain check.
+ * Returns names and ids only (no domains, websites, invite links).
+ */
+const MIN_LOOKUP_CHARS = 3;
+const lookupLimiter = security.rateLimit({ windowMs: 60 * 1000, max: 240 });
+app.get('/api/companies/lookup', lookupLimiter, async (req, res, next) => {
+  const q = str(req.query.q, 200);
+  const email = str(req.query.email, 200).toLowerCase();
+  const pub = (c) => (c ? { id: c.id, name: c.name } : null);
   try {
-    res.json(await db.listCompanies()); // id/name/domain/website only — never invite links or passcodes
+    const companies = await db.listCompanies();
+    const nq = match.normalize(q);
+    const r = match.match(companies, nq.length >= MIN_LOOKUP_CHARS ? q : '', email);
+    // Dropdown: plain substring hits first (what autocomplete users expect), then fuzzy ones, max 3.
+    const contains = nq.length >= MIN_LOOKUP_CHARS ? companies.filter((c) => match.normalize(c.name).includes(nq)) : [];
+    const seen = new Set();
+    const suggestions = contains.concat(r.suggestions.map((s) => s.company))
+      .filter((c) => !seen.has(c.id) && seen.add(c.id)).slice(0, 3);
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({
+      suggestions: suggestions.map(pub),
+      autoMatch: pub(r.autoMatch),
+      best: r.best ? { ...pub(r.best.company), score: Number(r.best.score.toFixed(3)) } : null,
+      byDomain: pub(r.byDomain),
+    });
   } catch (err) { next(err); }
 });
 

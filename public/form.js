@@ -19,7 +19,6 @@
     chooser: $('context-chooser'), options: $('context-options'), confirm: $('context-confirm'), cancel: $('context-cancel'),
   };
 
-  var companies = [];
   var cities = [];          // for the currently selected state
   var params = new URLSearchParams(window.location.search);
   var allParams = {};
@@ -173,8 +172,29 @@
   }
 
   // ---------- Company field ----------
+  // The registered-company list never reaches the browser. We send what was typed (3+ chars) and the
+  // email to /api/companies/lookup and get back at most a few close matches, names only.
+
+  var MIN_LOOKUP_CHARS = 3;
+  var lastLookup = { key: null, result: null }; // memo of the most recent server answer
+  var selectedCompany = null;                   // { id, name } once attached
+
+  function lookupKey(name, email) { return M.normalize(name) + '|' + String(email || '').trim().toLowerCase(); }
+
+  /** Ask the server which registered company (if any) this looks like. Resolves to { suggestions, autoMatch, best, byDomain }. */
+  function lookup(name, email) {
+    var key = lookupKey(name, email);
+    if (lastLookup.key === key && lastLookup.result) return Promise.resolve(lastLookup.result);
+    var qs = '?q=' + encodeURIComponent(M.normalize(name).length >= MIN_LOOKUP_CHARS ? name.trim() : '') +
+             '&email=' + encodeURIComponent(String(email || '').trim());
+    return fetch('/api/companies/lookup' + qs)
+      .then(function (r) { return r.ok ? r.json() : { suggestions: [], autoMatch: null, best: null, byDomain: null }; })
+      .catch(function () { return { suggestions: [], autoMatch: null, best: null, byDomain: null }; })
+      .then(function (result) { lastLookup = { key: key, result: result }; return result; });
+  }
 
   function setCompany(c) {
+    selectedCompany = { id: c.id, name: c.name };
     els.company.value = c.name;
     els.companyId.value = c.id;
     hideSuggest();
@@ -205,79 +225,92 @@
 
   var companyCombo = combobox({
     input: els.company, menu: els.companyList,
+    // Only what the server returned for exactly what's in the box right now — never a full list.
     getItems: function (q) {
-      var nq = M.normalize(q);
-      var list = companies.filter(function (c) {
-        return !nq || M.normalize(c.name).indexOf(nq) !== -1 || M.scoreName(q, c.name) >= 0.7;
-      });
-      return list.map(function (c) { return { label: c.name, value: c.id, tag: 'Registered', company: c }; });
+      var r = lastLookup.result;
+      if (!r || lastLookup.key !== lookupKey(q, els.email.value) || M.normalize(q).length < MIN_LOOKUP_CHARS) return [];
+      return r.suggestions.map(function (c) { return { label: c.name, value: c.id, tag: 'Registered', company: c }; });
     },
     onSelect: function (it) { setCompany(it.company); },
     onInput: function () {
       // Typing anything after a selection means it's free text again.
-      var c = companies.find(function (x) { return x.id === Number(els.companyId.value); });
-      if (!c || c.name !== els.company.value) { els.companyId.value = ''; hideMatched(); }
+      if (!selectedCompany || selectedCompany.name !== els.company.value) { selectedCompany = null; els.companyId.value = ''; hideMatched(); }
       hideSuggest();
-      debounce('company', checkCompany, 350);
+      debounce('company', refreshCompany, 300);
     },
   });
 
-  /** Run fuzzy matching on the typed name; auto-attach or offer "Did you mean?". */
-  function checkCompany() {
+  /** Fetch suggestions for the current text, show the dropdown, and auto-attach / offer "Did you mean?". */
+  function refreshCompany() {
     var typed = els.company.value.trim();
     if (!typed) { els.companyId.value = ''; hideMatched(); hideSuggest(); return; }
     if (els.companyId.value) return; // already attached
+    lookup(typed, els.email.value).then(function (r) {
+      if (els.company.value.trim() !== typed) return; // they kept typing; a newer lookup is on its way
+      if (document.activeElement === els.company) companyCombo.refresh();
+      applyCompanyMatch(r);
+    });
+  }
 
-    var r = M.match(companies, typed, els.email.value);
+  function applyCompanyMatch(r) {
+    if (els.companyId.value) return;
     if (r.autoMatch) {
+      selectedCompany = { id: r.autoMatch.id, name: r.autoMatch.name };
       els.companyId.value = r.autoMatch.id;
       showMatched(r.autoMatch, false);
       hideSuggest();
-    } else if (r.best && els.companySuggest.dataset.dismissed !== String(r.best.company.id)) {
-      showSuggest(els.companySuggest, 'Did you mean', r.best.company, '“' + r.best.company.name + '”?');
+    } else if (r.best && els.companySuggest.dataset.dismissed !== String(r.best.id)) {
+      showSuggest(els.companySuggest, 'Did you mean', r.best, '\u201c' + r.best.name + '\u201d?');
     } else {
       hideSuggest();
     }
     postHeight();
   }
-  els.company.addEventListener('blur', function () { setTimeout(checkCompany, 130); });
+
+  els.company.addEventListener('blur', function () { setTimeout(refreshCompany, 130); });
 
   /**
    * Before submitting: if the typed name looks like a registered company (or the email domain says so)
    * and the user hasn't said yes or no yet, make them decide so the lead lands with the right company.
+   * Resolves true when we're blocking on that decision.
    */
   function needsCompanyDecision() {
-    if (els.companyId.value) return false;
-    var r = M.match(companies, els.company.value, els.email.value);
-    var pending = null, el = null;
-    if (r.byDomain && els.emailSuggest.dataset.dismissed !== String(r.byDomain.id)) {
-      pending = r.byDomain; el = els.emailSuggest;
-      showSuggest(el, 'Your email is @' + M.rootDomain(M.emailDomain(els.email.value)) + ' — is your company', pending, pending.name + '?');
-    } else if (r.best && r.best.score >= 0.7 && els.companySuggest.dataset.dismissed !== String(r.best.company.id)) {
-      pending = r.best.company; el = els.companySuggest;
-      showSuggest(el, 'Did you mean', pending, '“' + pending.name + '”?');
-    }
-    if (!pending) return false;
-    setError('company_name', 'Please confirm your company above (choose Yes or No).');
-    el.querySelector('button').focus();
-    postHeight();
-    return true;
+    if (els.companyId.value) return Promise.resolve(false);
+    return lookup(els.company.value, els.email.value).then(function (r) {
+      var pending = null, el = null;
+      if (r.byDomain && els.emailSuggest.dataset.dismissed !== String(r.byDomain.id)) {
+        pending = r.byDomain; el = els.emailSuggest;
+        showSuggest(el, 'Your email is @' + M.rootDomain(M.emailDomain(els.email.value)) + ' \u2014 is your company', pending, pending.name + '?');
+      } else if (r.best && r.best.score >= 0.7 && els.companySuggest.dataset.dismissed !== String(r.best.id)) {
+        pending = r.best; el = els.companySuggest;
+        showSuggest(el, 'Did you mean', pending, '\u201c' + pending.name + '\u201d?');
+      }
+      if (!pending) return false;
+      setError('company_name', 'Please confirm your company above (choose Yes or No).');
+      el.querySelector('button').focus();
+      postHeight();
+      return true;
+    });
   }
 
   /** If the email is on a registered company's domain, make sure the submission lands there. */
   function checkEmailDomain() {
-    var r = M.match(companies, '', els.email.value);
-    els.emailSuggest.hidden = true;
-    if (!r.byDomain) return;
-    if (Number(els.companyId.value) === r.byDomain.id) return;
-    if (els.emailSuggest.dataset.dismissed === String(r.byDomain.id)) return;
+    var email = els.email.value.trim();
+    if (!/@[^@\s]+\.[^@\s]+$/.test(email)) return;
+    lookup('', email).then(function (r) {
+      if (els.email.value.trim() !== email) return;
+      els.emailSuggest.hidden = true;
+      if (!r.byDomain) return;
+      if (Number(els.companyId.value) === r.byDomain.id) return;
+      if (els.emailSuggest.dataset.dismissed === String(r.byDomain.id)) return;
 
-    var typed = els.company.value.trim();
-    if (!typed) { setCompany(r.byDomain); return; } // nothing typed yet: just fill it in
-    showSuggest(els.emailSuggest,
-      'Your email is @' + M.rootDomain(M.emailDomain(els.email.value)) + ' — is your company',
-      r.byDomain, r.byDomain.name + '?');
-    postHeight();
+      var typed = els.company.value.trim();
+      if (!typed) { setCompany(r.byDomain); return; } // nothing typed yet: just fill it in
+      showSuggest(els.emailSuggest,
+        'Your email is @' + M.rootDomain(M.emailDomain(email)) + ' \u2014 is your company',
+        r.byDomain, r.byDomain.name + '?');
+      postHeight();
+    });
   }
   els.email.addEventListener('blur', checkEmailDomain);
   els.email.addEventListener('input', function () { debounce('email', checkEmailDomain, 500); });
@@ -377,8 +410,10 @@
       postHeight();
       return;
     }
-    if (needsCompanyDecision()) return;
+    needsCompanyDecision().then(function (blocked) { if (!blocked) submit(); });
+  });
 
+  function submit() {
     var payload = {
       company_name: els.company.value.trim(),
       company_id: els.companyId.value || null,
@@ -411,7 +446,7 @@
         if (err.message !== 'validation') els.formError.textContent = 'We couldn’t submit the form. Please try again.';
       })
       .finally(function () { els.submit.disabled = false; els.submit.classList.remove('loading'); postHeight(); });
-  });
+  }
 
   function onSuccess(body) {
     if (window.parent !== window) {
@@ -464,19 +499,15 @@
 
   // ---------- Boot ----------
 
-  Promise.all([
-    fetch('/api/companies').then(function (r) { return r.json(); }),
-    fetch('/api/locations/states').then(function (r) { return r.json(); }),
-  ]).then(function (res) {
-    companies = res[0];
-    res[1].forEach(function (s) {
+  fetch('/api/locations/states').then(function (r) { return r.json(); }).then(function (states) {
+    states.forEach(function (s) {
       var o = document.createElement('option'); o.value = s.code; o.textContent = s.name; els.state.appendChild(o);
     });
 
     // Apply URL prefill that depends on loaded data.
     var st = (params.get('state') || '').trim();
     if (st) {
-      var byName = res[1].find(function (s) { return s.code === st.toUpperCase() || s.name.toLowerCase() === st.toLowerCase(); });
+      var byName = states.find(function (s) { return s.code === st.toUpperCase() || s.name.toLowerCase() === st.toLowerCase(); });
       if (byName) {
         els.state.value = byName.code;
         loadCities(byName.code).then(function () {
@@ -485,7 +516,7 @@
       }
     }
     applyPreviewType(els.previewType.value);
-    if (els.company.value) checkCompany();
+    if (els.company.value) refreshCompany();
     if (els.email.value) checkEmailDomain();
     postHeight();
   }).catch(function () {
