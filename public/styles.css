@@ -214,22 +214,32 @@ select { padding-right: 36px; cursor: pointer; }
 .m12-review h2 { margin: 0 0 12px; font-size: 24px; line-height: 1.2; }
 .m12-review p { margin: 0 0 14px; font-size: 16px; line-height: 1.55; color: var(--m12-text); }
 
-/* Heads-up before we send them to the community signup */
-.m12-redirect { padding: 36px 28px; max-width: 560px; }
+/* Icon + callout used by the under-review card */
 .m12-redirect-icon {
   width: 52px; height: 52px; margin-bottom: 16px;
   border-radius: var(--m12-radius); background: var(--m12-accent-soft); color: var(--m12-accent);
   display: flex; align-items: center; justify-content: center;
 }
-.m12-redirect h2 { margin: 0 0 12px; font-size: 24px; line-height: 1.2; }
-.m12-redirect p { margin: 0 0 14px; font-size: 16px; line-height: 1.55; color: var(--m12-text); }
 .m12-redirect-warn {
   padding: 12px 14px; border-left: 4px solid var(--m12-accent);
   background: var(--m12-accent-soft); border-radius: var(--m12-radius);
 }
-.m12-redirect-warn span { font-weight: 600; word-break: break-all; }
-.m12-redirect-count { color: var(--m12-muted); font-size: 15px !important; }
-.m12-redirect .m12-btn { width: auto; padding: 13px 26px; }
+
+/* Heads-up before we send them to the community signup */
+.m12-redirect { padding: 36px 28px; max-width: 600px; }
+.m12-redirect-title { margin: 0 0 14px; font-size: 40px; line-height: 1.15; font-weight: 700; color: var(--m12-accent); }
+.m12-redirect-sub { font-size: 24px !important; margin-bottom: 22px !important; }
+.m12-redirect p { margin: 0 0 20px; font-size: 22px; line-height: 1.45; color: var(--m12-text); }
+.m12-redirect-strong { font-weight: 700; }
+.m12-redirect-count { color: var(--m12-muted); font-size: 14px !important; margin: 14px 0 0 !important; }
+.m12-btn--quiet { width: auto; padding: 16px 32px; font-size: 20px; font-weight: 500; color: var(--m12-text); background: #E5E7EB; }
+.m12-btn--quiet:hover { background: #D9DCE1; }
+@media (max-width: 480px) {
+  .m12-redirect-title { font-size: 32px; }
+  .m12-redirect p { font-size: 18px; }
+  .m12-redirect-sub { font-size: 20px !important; }
+  .m12-btn--quiet { width: 100%; }
+}
 
 .m12-check {
   width: 56px; height: 56px; margin: 0 auto 16px;
