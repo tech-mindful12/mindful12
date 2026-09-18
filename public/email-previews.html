@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Mindful 12 Email Previews</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --accent: #2D67FF; --text: #0D2158; --muted: #5B6B8F; --border: #D6DEF0; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: var(--text); background: #F1F3F8; }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 32px 20px 80px; }
+    header { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
+    h1 { margin: 0 0 6px; font-size: 26px; }
+    .sub { margin: 0; color: var(--muted); font-size: 15px; }
+    .toggle { display: inline-flex; border: 1.5px solid var(--border); border-radius: 5px; overflow: hidden; background: #fff; }
+    .toggle button { font: inherit; font-size: 14px; font-weight: 600; padding: 8px 14px; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
+    .toggle button.on { background: var(--accent); color: #fff; }
+    nav.toc { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
+    nav.toc a { font-size: 13px; font-weight: 600; color: var(--accent); background: #fff; border: 1.5px solid var(--border); border-radius: 5px; padding: 6px 10px; text-decoration: none; }
+    nav.toc a:hover { border-color: var(--accent); }
+    .email { background: #fff; border: 1.5px solid var(--border); border-radius: 5px; margin-bottom: 28px; overflow: hidden; }
+    .meta { padding: 16px 20px; border-bottom: 1.5px solid var(--border); }
+    .meta .n { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+    .meta h2 { margin: 4px 0 4px; font-size: 18px; }
+    .meta .line { margin: 2px 0; font-size: 14px; color: var(--muted); }
+    .meta .line strong { color: var(--text); font-weight: 600; }
+    .meta a.open { font-size: 13px; font-weight: 600; color: var(--accent); }
+    .frame { background: #EAF4FC; padding: 20px; display: flex; justify-content: center; }
+    .frame iframe { width: 100%; max-width: 700px; border: 0; background: #EAF4FC; display: block; height: 600px; transition: max-width .2s; }
+    body.mobile .frame iframe { max-width: 390px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Mindful 12 — email previews</h1>
+        <p class="sub">Rendered with sample data (<em>Jane</em>). Buttons link to placeholders until the real URLs are mapped. Subjects marked <em>proposed</em> still need sign-off.</p>
+      </div>
+      <div class="toggle" role="group" aria-label="Preview width">
+        <button type="button" class="on" data-w="desktop">Desktop</button>
+        <button type="button" data-w="mobile">Mobile</button>
+      </div>
+    </header>
+    <nav class="toc" id="toc"></nav>
+    <div id="list"></div>
+  </div>
+
+  <script>
+    (function () {
+      var list = document.getElementById('list'), toc = document.getElementById('toc');
+      fetch('/email-previews/manifest.json').then(function (r) { return r.json(); }).then(function (emails) {
+        emails.forEach(function (e, i) {
+          var id = 'e' + (i + 1);
+          var a = document.createElement('a'); a.href = '#' + id; a.textContent = e.file.replace(/\.html$/, ''); toc.appendChild(a);
+
+          var card = document.createElement('section'); card.className = 'email'; card.id = id;
+          var meta = document.createElement('div'); meta.className = 'meta';
+          var n = document.createElement('div'); n.className = 'n'; n.textContent = e.file.replace(/\.html$/, ''); meta.appendChild(n);
+          var h = document.createElement('h2'); h.textContent = 'Subject: ' + e.subject; meta.appendChild(h);
+          if (e.preview && e.preview !== 'same') { var p = document.createElement('p'); p.className = 'line'; p.innerHTML = '<strong>Preview text:</strong> '; p.appendChild(document.createTextNode(e.preview)); meta.appendChild(p); }
+          var w = document.createElement('p'); w.className = 'line'; w.innerHTML = '<strong>When:</strong> '; w.appendChild(document.createTextNode(e.when)); meta.appendChild(w);
+          var open = document.createElement('a'); open.className = 'open'; open.href = '/email-previews/' + e.file + '?sample=1'; open.target = '_blank'; open.rel = 'noopener'; open.textContent = 'Open full size ↗'; meta.appendChild(open);
+          card.appendChild(meta);
+
+          var frame = document.createElement('div'); frame.className = 'frame';
+          var iframe = document.createElement('iframe'); iframe.src = '/email-previews/' + e.file + '?sample=1'; iframe.title = e.subject; iframe.loading = 'lazy';
+          iframe.addEventListener('load', function () {
+            try { iframe.style.height = (iframe.contentDocument.documentElement.scrollHeight + 8) + 'px'; } catch (err) { /* keep default */ }
+          });
+          frame.appendChild(iframe); card.appendChild(frame);
+          list.appendChild(card);
+        });
+      });
+
+      document.querySelectorAll('.toggle button').forEach(function (b) {
+        b.addEventListener('click', function () {
+          document.querySelectorAll('.toggle button').forEach(function (x) { x.classList.toggle('on', x === b); });
+          document.body.classList.toggle('mobile', b.dataset.w === 'mobile');
+          setTimeout(function () {
+            document.querySelectorAll('.frame iframe').forEach(function (f) {
+              try { f.style.height = (f.contentDocument.documentElement.scrollHeight + 8) + 'px'; } catch (err) { /* ignore */ }
+            });
+          }, 250);
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

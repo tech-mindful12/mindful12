@@ -1,6 +1,7 @@
 'use strict';
 
 const path = require('path');
+const fs = require('fs');
 const express = require('express');
 const db = require('./db');
 const ghl = require('./ghl');
@@ -79,6 +80,25 @@ app.get('/setting-the-stage/executive', (req, res) => res.sendFile(path.join(__d
 app.get('/reset-breath', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'reset-breath.html')));
 // FAQ with the app tour and an "ask us directly" form.
 app.get('/faq', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'faq.html')));
+
+// Email previews for review: the gallery, the manifest, and each built email (with sample merge data when ?sample=1).
+const EMAILS_DIR = path.join(__dirname, '..', 'emails');
+app.get('/email-previews', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'email-previews.html')));
+app.get('/email-previews/manifest.json', (req, res) => res.sendFile(path.join(EMAILS_DIR, 'manifest.json')));
+app.get('/email-previews/:file', (req, res) => {
+  const file = String(req.params.file);
+  if (!/^[\w.-]+\.html$/.test(file)) return res.status(404).end();
+  const full = path.join(EMAILS_DIR, file);
+  if (!full.startsWith(EMAILS_DIR) || !fs.existsSync(full)) return res.status(404).end();
+  let html = fs.readFileSync(full, 'utf8');
+  if (req.query.sample) {
+    html = html
+      .replace(/\{\{contact\.first_name\}\}/g, 'Jane')
+      .replace(/\{\{unsubscribe_link\}\}/g, '<a href="#" style="color:#647483;">Unsubscribe</a>');
+  }
+  res.setHeader('Cache-Control', 'no-cache');
+  res.type('html').send(html);
+});
 
 // Form files revalidate on every load (so updates reach live embeds immediately); images cache for a day.
 app.use(express.static(path.join(__dirname, '..', 'public'), {
