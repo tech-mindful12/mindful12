@@ -85,6 +85,19 @@ async function migrate() {
     CREATE INDEX IF NOT EXISTS form_submissions_created_at_idx ON form_submissions (created_at DESC);
     CREATE INDEX IF NOT EXISTS form_submissions_email_idx ON form_submissions (lower(email));
     CREATE INDEX IF NOT EXISTS form_submissions_company_idx ON form_submissions (matched_company_id);
+
+    CREATE TABLE IF NOT EXISTS faq_questions (
+      id                   SERIAL PRIMARY KEY,
+      name                 TEXT NOT NULL,
+      email                TEXT NOT NULL,
+      question             TEXT NOT NULL,
+      page_url             TEXT,
+      ip                   TEXT,
+      user_agent           TEXT,
+      ghl_webhook_status   TEXT,
+      ghl_webhook_response TEXT,
+      created_at           TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
   `);
 
   for (const c of SEED_COMPANIES) {
@@ -175,6 +188,29 @@ async function updateWebhookStatus(id, status, response) {
   );
 }
 
+// ---------- FAQ questions ----------
+
+async function insertQuestion(q) {
+  const { rows } = await pool.query(
+    `INSERT INTO faq_questions (name, email, question, page_url, ip, user_agent)
+     VALUES ($1,$2,$3,$4,$5,$6) RETURNING id, created_at`,
+    [q.name, q.email, q.question, q.page_url, q.ip, q.user_agent]
+  );
+  return rows[0];
+}
+
+async function updateQuestionWebhookStatus(id, status, response) {
+  await pool.query(
+    `UPDATE faq_questions SET ghl_webhook_status = $2, ghl_webhook_response = $3 WHERE id = $1`,
+    [id, status, response ? String(response).slice(0, 2000) : null]
+  );
+}
+
+async function listQuestions({ limit = 100, offset = 0 } = {}) {
+  const { rows } = await pool.query(`SELECT * FROM faq_questions ORDER BY created_at DESC LIMIT $1 OFFSET $2`, [limit, offset]);
+  return rows;
+}
+
 async function listSubmissions({ limit = 100, offset = 0 } = {}) {
   const { rows } = await pool.query(
     `SELECT * FROM form_submissions ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
@@ -187,4 +223,5 @@ module.exports = {
   pool, migrate,
   listCompanies, listCompaniesForRouting, listCompaniesAdmin, addCompany, updateCompany, deleteCompany,
   insertSubmission, updateWebhookStatus, listSubmissions,
+  insertQuestion, updateQuestionWebhookStatus, listQuestions,
 };

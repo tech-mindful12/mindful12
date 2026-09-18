@@ -7,7 +7,8 @@
  * data-page="preview" loads the multi-step walkthrough that ends with the form (preview.html)
  * instead of the bare form; data-page="admin" loads the registered-companies admin panel;
  * data-page="stage" / "stage-executive" load the Setting the Stage walkthrough;
- * data-page="reset-breath" loads The Reset Breath page with its audio player. Any other data-* attribute becomes a URL parameter on the form
+ * data-page="reset-breath" loads The Reset Breath page with its audio player;
+ * data-page="faq" loads the FAQ (app tour video, questions, ask-us form). Any other data-* attribute becomes a URL parameter on the form
  * (data-preview-type -> preview_type, data-bg -> bg, data-redirect -> redirect, ...).
  * Query parameters on the funnel page URL (?preview_type=..., ?email=..., utm_*) are forwarded too,
  * and win over data-* attributes, so one page can serve several preview types via its link.
@@ -22,7 +23,7 @@
     if (container.getAttribute('data-mounted')) return;
     container.setAttribute('data-mounted', '1');
 
-    var pages = { preview: '/preview.html', admin: '/admin', stage: '/setting-the-stage', 'stage-executive': '/setting-the-stage/executive', 'reset-breath': '/reset-breath' };
+    var pages = { preview: '/preview.html', admin: '/admin', stage: '/setting-the-stage', 'stage-executive': '/setting-the-stage/executive', 'reset-breath': '/reset-breath', faq: '/faq' };
     var page = pages[container.getAttribute('data-page')] || '/';
     var params = new URLSearchParams();
     Array.prototype.forEach.call(container.attributes, function (a) {
@@ -53,6 +54,10 @@
         if (fallback.parentNode) fallback.parentNode.removeChild(fallback);
         iframe.style.height = Math.ceil(e.data.height) + 'px';
         iframe.style.minHeight = '0';
+      }
+      if (e.data.type === 'mindful12:scrollTo' && typeof e.data.offset === 'number') {
+        var top = iframe.getBoundingClientRect().top + window.pageYOffset + e.data.offset - 16;
+        window.scrollTo({ top: top, behavior: 'smooth' });
       }
       if (e.data.type === 'mindful12:scroll') {
         var top = iframe.getBoundingClientRect().top + window.pageYOffset - 16;

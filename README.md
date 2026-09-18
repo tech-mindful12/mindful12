@@ -98,6 +98,10 @@ Embed with `data-page="stage"` or `data-page="stage-executive"`. `public/stage.j
 
 `https://YOUR-APP/reset-breath` — `public/reset-breath.html`: the read-along practice, a guided-audio section with an inline player (MP3 hosted on GHL's CDN; URL in the `<audio>` tag), and the closing reflection. Embed with `data-page="reset-breath"`. Player logic in `public/reset-breath.js`, styles in `public/reset-breath.css`.
 
+## FAQ page
+
+`https://YOUR-APP/faq` — `public/faq.html`: intro, **One Minute App Tour** (MP4 from GHL's CDN in a native player, `preload="metadata"`), the questions as an accordion (`<details>`), and an **Ask us directly** form. Questions are stored in `faq_questions` and POSTed to `GHL_QUESTION_WEBHOOK_URL` (falls back to `GHL_WEBHOOK_URL`) with `event: "faq_question"`, `full_name`, `email`, `question`. Rate-limited (10 / 10 min per IP) with a honeypot. Admin: `GET /api/admin/questions`. Embed with `data-page="faq"`. Edit the Q&A list in `faq.html` (it's plain HTML).
+
 ## How company matching works
 
 1. **Dropdown** — the Company Name field autocompletes from `registered_companies` via `GET /api/companies/lookup` once 3+ characters are typed. The browser never receives the list — only up to 3 close matches (names + ids) for what was typed, so registered companies can't be browsed.
@@ -157,6 +161,8 @@ Seeded with Baystate Benefit Services (`baystatebenefits.com`) and Central Bosto
 | `GET` | `/api/locations/states` | US states/territories |
 | `GET` | `/api/locations/cities?state=MA` | Cities for a state |
 | `POST` | `/api/submissions` | Store submission + fire GHL webhook; returns `id`, `matched_company`, `redirect_url` |
+| `POST` | `/api/questions` | Store an FAQ question + fire GHL webhook (`event: faq_question`) |
+| `GET` | `/api/admin/questions` | List FAQ questions — session or `X-Admin-Key` |
 | `POST` | `/api/admin/login` | `{password}` → `{token}` (12 h) |
 | `GET/POST` | `/api/admin/companies` | List / add — `Authorization: Bearer <token>` or `X-Admin-Key` |
 | `PUT/DELETE` | `/api/admin/companies/:id` | Update / delete |
