@@ -73,6 +73,8 @@ app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, '..', 'public'
 // Setting the Stage walkthrough: general and executive editions.
 app.get('/setting-the-stage', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'setting-the-stage.html')));
 app.get('/setting-the-stage/executive', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'setting-the-stage-executive.html')));
+// The Reset Breath: read-along practice + guided audio.
+app.get('/reset-breath', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'reset-breath.html')));
 
 // Form files revalidate on every load (so updates reach live embeds immediately); images cache for a day.
 app.use(express.static(path.join(__dirname, '..', 'public'), {

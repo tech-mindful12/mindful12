@@ -6,7 +6,8 @@
  *
  * data-page="preview" loads the multi-step walkthrough that ends with the form (preview.html)
  * instead of the bare form; data-page="admin" loads the registered-companies admin panel;
- * data-page="stage" / "stage-executive" load the Setting the Stage walkthrough. Any other data-* attribute becomes a URL parameter on the form
+ * data-page="stage" / "stage-executive" load the Setting the Stage walkthrough;
+ * data-page="reset-breath" loads The Reset Breath page with its audio player. Any other data-* attribute becomes a URL parameter on the form
  * (data-preview-type -> preview_type, data-bg -> bg, data-redirect -> redirect, ...).
  * Query parameters on the funnel page URL (?preview_type=..., ?email=..., utm_*) are forwarded too,
  * and win over data-* attributes, so one page can serve several preview types via its link.
@@ -21,7 +22,7 @@
     if (container.getAttribute('data-mounted')) return;
     container.setAttribute('data-mounted', '1');
 
-    var pages = { preview: '/preview.html', admin: '/admin', stage: '/setting-the-stage', 'stage-executive': '/setting-the-stage/executive' };
+    var pages = { preview: '/preview.html', admin: '/admin', stage: '/setting-the-stage', 'stage-executive': '/setting-the-stage/executive', 'reset-breath': '/reset-breath' };
     var page = pages[container.getAttribute('data-page')] || '/';
     var params = new URLSearchParams();
     Array.prototype.forEach.call(container.attributes, function (a) {
