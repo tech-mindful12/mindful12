@@ -95,6 +95,24 @@
 .lp-back .lp-arrow { flex: none; transition: transform .15s; }
 .lp-back:hover .lp-arrow { transform: translateX(-3px); }
 
+/* Setting the Stage page */
+.lp-eyebrow { margin: 0 0 10px; font-size: 14px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--m12-accent); }
+.lp-lede--italic { font-style: italic; }
+.lp-subhead { margin: 0 0 16px; font-size: 24px; font-weight: 700; line-height: 1.3; color: var(--m12-text); }
+.lp-quote { margin: 4px 0 18px; font-size: 26px; font-weight: 700; line-height: 1.3; color: var(--m12-text); }
+.lp-body--tight { line-height: 1.5; }
+.lp-body--list { font-size: 22px; line-height: 1.6; font-weight: 500; }
+.lp-days { display: flex; flex-direction: column; gap: 18px; margin: 6px 0 4px; }
+.lp-day-label { margin: 0; font-size: 18px; font-weight: 700; color: var(--m12-text); }
+.lp-day-text { margin: 2px 0 0; font-size: 18px; color: var(--m12-text); }
+.lp-callout {
+  margin: 22px 0 4px; padding: 20px 24px;
+  background: #D6E4FE; border-radius: var(--m12-radius);
+  font-size: 22px; font-weight: 700; line-height: 1.4; color: var(--m12-accent);
+}
+.lp-callout--plain { font-size: 18px; font-weight: 400; color: var(--m12-text); }
+.lp-footer { margin: 40px 0 0; font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--m12-muted); display: flex; justify-content: space-between; }
+
 /* The form sits inside the step, not in its own card */
 .m12-card--inline { padding: 0; background: transparent; }
 body.bg-wave .m12-card--inline, body.bg-transparent .m12-card--inline { box-shadow: none; }

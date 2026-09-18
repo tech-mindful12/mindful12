@@ -68,8 +68,11 @@ app.use('/api', security.rateLimit({ windowMs: 60 * 1000, max: 120 }));
 const submitLimiter = security.rateLimit({ windowMs: 10 * 60 * 1000, max: 30, message: 'Too many submissions from this network. Please try again in a few minutes.' });
 const loginLimiter = security.rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: 'Too many sign-in attempts. Please wait 15 minutes.' });
 
-// Pretty URL for the admin panel.
+// Pretty URLs.
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'admin.html')));
+// Setting the Stage walkthrough: general and executive editions.
+app.get('/setting-the-stage', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'setting-the-stage.html')));
+app.get('/setting-the-stage/executive', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'setting-the-stage-executive.html')));
 
 // Form files revalidate on every load (so updates reach live embeds immediately); images cache for a day.
 app.use(express.static(path.join(__dirname, '..', 'public'), {
