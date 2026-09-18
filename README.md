@@ -87,10 +87,10 @@ Messages and options live in `PREVIEW_TYPES` at the top of `public/form.js`; the
 
 Two editions of the Monday "Setting the Stage" walkthrough (8 steps, same Continue/Back mechanics and styling as the signup flow), content from `Mindful12_Executive_Preview_Setting_the_Stage.pdf`:
 
-- `https://YOUR-APP/setting-the-stage/executive` — the PDF verbatim
-- `https://YOUR-APP/setting-the-stage` — general edition: same copy minus the executive/team references ("Executive Preview" → "Preview"; the "See What Your Team Is Noticing" step and "Your team is doing this with you." are dropped) — **placeholder until Bob supplies the non-executive copy**
+- `https://YOUR-APP/setting-the-stage/executive` — `public/setting-the-stage-executive.html`, the PDF verbatim (8 steps)
+- `https://YOUR-APP/setting-the-stage` — `public/setting-the-stage.html`, the non-executive copy (7 steps: Setting the Stage, The First Practice, Tomorrow Morning, Notice the Moment, Mindful Awareness, One Breath, The Beginning)
 
-Embed with `data-page="stage"` or `data-page="stage-executive"`. Markup in `public/setting-the-stage.html`; audience switching in `public/stage.js` (`data-audience` / `data-audience-text`).
+Embed with `data-page="stage"` or `data-page="stage-executive"`. `public/stage.js` keeps the "n / N" footer in sync and reports height to the embed.
 
 ## How company matching works
 

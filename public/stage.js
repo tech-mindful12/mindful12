@@ -1,25 +1,9 @@
 /*
- * Setting the Stage (setting-the-stage.html). Runs before flow.js so the step list is final
- * when flow.js counts it.
- *
- * Audience comes from the path (/setting-the-stage/executive) or ?audience=executive.
- * Elements with data-audience="executive" only show for executives; data-audience-text spans
- * pick the wording for the current audience.
+ * Setting the Stage pages (setting-the-stage.html, setting-the-stage-executive.html):
+ * keeps the "n / N" footer in sync and reports height to the embed loader.
  */
 (function () {
   'use strict';
-
-  var params = new URLSearchParams(window.location.search);
-  var fromPath = /\/executive\/?$/.test(window.location.pathname) ? 'executive' : '';
-  var audience = (params.get('audience') || fromPath || 'general').toLowerCase() === 'executive' ? 'executive' : 'general';
-  document.documentElement.setAttribute('data-audience', audience);
-
-  Array.prototype.forEach.call(document.querySelectorAll('[data-audience]'), function (el) {
-    if (el.getAttribute('data-audience') !== audience) el.parentNode.removeChild(el);
-  });
-  Array.prototype.forEach.call(document.querySelectorAll('[data-audience-text]'), function (el) {
-    if (el.getAttribute('data-audience-text') !== audience) el.parentNode.removeChild(el);
-  });
 
   // "3 / 8" footer, kept in sync with whichever step flow.js activates.
   var counter = document.getElementById('stage-count');
