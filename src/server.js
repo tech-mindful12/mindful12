@@ -11,6 +11,8 @@ const locations = require('../data/us-locations.json');
 
 const PORT = process.env.PORT || 3000;
 const GHL_WEBHOOK_URL = ghl.config.webhookUrl;
+// FAQ "ask us directly" questions go here; falls back to the main webhook (payload carries event: "faq_question").
+const GHL_QUESTION_WEBHOOK_URL = process.env.GHL_QUESTION_WEBHOOK_URL || GHL_WEBHOOK_URL;
 const ADMIN_API_KEY = process.env.ADMIN_API_KEY || '';
 
 const STATE_CODES = new Set(locations.states.map((s) => s.code));
@@ -75,6 +77,8 @@ app.get('/setting-the-stage', (req, res) => res.sendFile(path.join(__dirname, '.
 app.get('/setting-the-stage/executive', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'setting-the-stage-executive.html')));
 // The Reset Breath: read-along practice + guided audio.
 app.get('/reset-breath', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'reset-breath.html')));
+// FAQ with the app tour and an "ask us directly" form.
+app.get('/faq', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'faq.html')));
 
 // Form files revalidate on every load (so updates reach live embeds immediately); images cache for a day.
 app.use(express.static(path.join(__dirname, '..', 'public'), {
@@ -265,6 +269,65 @@ app.post('/api/submissions', submitLimiter, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ---------- FAQ: ask us directly ----------
+
+const questionLimiter = security.rateLimit({ windowMs: 10 * 60 * 1000, max: 10, message: 'Too many questions from this network. Please try again in a few minutes.' });
+
+app.post('/api/questions', questionLimiter, async (req, res, next) => {
+  const b = req.body || {};
+  if (str(b.website)) return res.status(201).json({ ok: true, id: 0 }); // honeypot
+
+  const input = {
+    name: str(b.name, 120),
+    email: str(b.email).toLowerCase(),
+    question: str(b.question, 4000),
+    page_url: str(b.page_url, 2000) || null,
+  };
+  const errors = {};
+  if (!input.name) errors.name = 'Name is required';
+  if (!EMAIL_RE.test(input.email)) errors.email = 'Enter a valid email address';
+  if (input.question.length < 5) errors.question = 'Tell us a little more';
+  if (Object.keys(errors).length) return res.status(422).json({ ok: false, errors });
+
+  try {
+    const row = await db.insertQuestion({ ...input, ip: req.ip, user_agent: str(req.get('user-agent'), 500) });
+    res.status(201).json({ ok: true, id: row.id });
+
+    postWebhook(GHL_QUESTION_WEBHOOK_URL, {
+      event: 'faq_question',
+      question_id: row.id,
+      submitted_at: row.created_at,
+      full_name: input.name,
+      first_name: input.name.split(/\s+/)[0],
+      last_name: input.name.split(/\s+/).slice(1).join(' '),
+      email: input.email,
+      question: input.question,
+      page_url: input.page_url,
+    }).then(
+      (r) => db.updateQuestionWebhookStatus(row.id, r.status, r.detail),
+      (err) => console.error('[ghl] unexpected error', err)
+    );
+  } catch (err) { next(err); }
+});
+
+/** POST JSON to a GHL inbound webhook; resolves to { status: 'sent' | 'failed' | 'skipped', detail }. */
+async function postWebhook(url, payload) {
+  if (!url) return { status: 'skipped', detail: 'webhook URL not set' };
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10000);
+  try {
+    const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: controller.signal });
+    const text = await resp.text().catch(() => '');
+    if (!resp.ok) console.error(`[ghl] webhook responded ${resp.status}`);
+    return { status: resp.ok ? 'sent' : 'failed', detail: `${resp.status} ${text}` };
+  } catch (err) {
+    console.error('[ghl] webhook failed:', err.message);
+    return { status: 'failed', detail: err.message };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** Company invite link (executive/employee) > ?redirect= (allowed hosts only) > per-preview-type env > generic env. */
 function resolveRedirect({ matched, input }) {
   if (matched && matched.invite_link && isHttpsUrl(matched.invite_link)) return matched.invite_link;
@@ -381,6 +444,14 @@ app.delete('/api/admin/companies/:id', requireAdmin, async (req, res, next) => {
     const gone = await db.deleteCompany(id);
     if (!gone) return res.status(404).json({ ok: false, error: 'Not found' });
     res.json({ ok: true });
+  } catch (err) { next(err); }
+});
+
+app.get('/api/admin/questions', requireAdmin, async (req, res, next) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit, 10) || 100, 500);
+    const offset = parseInt(req.query.offset, 10) || 0;
+    res.json({ ok: true, questions: await db.listQuestions({ limit, offset }) });
   } catch (err) { next(err); }
 });
 

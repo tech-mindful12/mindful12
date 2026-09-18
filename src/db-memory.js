@@ -76,6 +76,24 @@ async function updateWebhookStatus(id, status, response) {
   if (row) { row.ghl_webhook_status = status; row.ghl_webhook_response = response || null; }
 }
 
+const questions = [];
+let nextQuestionId = 1;
+
+async function insertQuestion(q) {
+  const row = { id: nextQuestionId++, created_at: new Date(), ghl_webhook_status: null, ghl_webhook_response: null, ...q };
+  questions.push(row);
+  return { id: row.id, created_at: row.created_at };
+}
+
+async function updateQuestionWebhookStatus(id, status, response) {
+  const row = questions.find((q) => q.id === id);
+  if (row) { row.ghl_webhook_status = status; row.ghl_webhook_response = response || null; }
+}
+
+async function listQuestions({ limit = 100, offset = 0 } = {}) {
+  return questions.slice().reverse().slice(offset, offset + limit);
+}
+
 async function listSubmissions({ limit = 100, offset = 0 } = {}) {
   return submissions.slice().reverse().slice(offset, offset + limit);
 }
@@ -84,4 +102,5 @@ module.exports = {
   pool, migrate,
   listCompanies, listCompaniesForRouting, listCompaniesAdmin, addCompany, updateCompany, deleteCompany,
   insertSubmission, updateWebhookStatus, listSubmissions,
+  insertQuestion, updateQuestionWebhookStatus, listQuestions,
 };
