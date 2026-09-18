@@ -14,6 +14,7 @@
     previewType: $('preview_type'), submit: $('submit-btn'), formError: $('form-error'),
     success: $('m12-success'), successText: $('success-text'),
     redirect: $('m12-redirect'), redirectEmail: $('redirect-email'), redirectCount: $('redirect-count'), redirectNow: $('redirect-now'),
+    review: $('m12-review'), emailNotice: $('email-notice'),
     companyField: $('company-field'), companyOptional: $('company-optional'), companyHelp: $('company-help'),
     context: $('m12-context'), contextText: $('context-text'), contextChange: $('context-change'),
     chooser: $('context-chooser'), options: $('context-options'), confirm: $('context-confirm'), cancel: $('context-cancel'),
@@ -199,6 +200,7 @@
     hideSuggest();
     showMatched(c, true);
     setError('company_name', '');
+    setTimeout(function () { if (typeof checkEmployeeDomain === 'function') checkEmployeeDomain(); }, 0);
   }
 
   function showMatched(c, explicit) {
@@ -315,6 +317,28 @@
   }
   els.email.addEventListener('blur', checkEmailDomain);
   els.email.addEventListener('input', function () { debounce('email', checkEmailDomain, 500); });
+
+  /**
+   * Employees: the email has to be on their company's domain to be added automatically.
+   * Warn as soon as we can tell it isn't, so they can switch to a work address (or know what to expect).
+   */
+  function isEmployee() { return els.previewType.value === 'employee'; }
+
+  function checkEmployeeDomain() {
+    if (!els.emailNotice || !isEmployee()) return;
+    var email = els.email.value.trim(), company = els.company.value.trim();
+    if (!/@[^@\s]+\.[^@\s]+$/.test(email) || !company) { els.emailNotice.hidden = true; postHeight(); return; }
+    lookup(company, email).then(function (r) {
+      if (els.email.value.trim() !== email || !isEmployee()) return;
+      var selectedId = Number(els.companyId.value) || null;
+      var verified = r.byDomain && (!selectedId || r.byDomain.id === selectedId);
+      els.emailNotice.hidden = Boolean(verified);
+      postHeight();
+    });
+  }
+  els.email.addEventListener('blur', checkEmployeeDomain);
+  els.email.addEventListener('input', function () { debounce('employeeDomain', checkEmployeeDomain, 600); });
+  els.company.addEventListener('blur', function () { setTimeout(checkEmployeeDomain, 150); });
 
   // ---------- State + City ----------
 
@@ -452,9 +476,11 @@
 
   function onSuccess(body) {
     if (window.parent !== window) {
-      window.parent.postMessage({ type: 'mindful12:submitted', id: body.id, matched_company: body.matched_company }, '*');
+      window.parent.postMessage({ type: 'mindful12:submitted', id: body.id, matched_company: body.matched_company, under_review: body.under_review }, '*');
     }
     form.hidden = true;
+    // Employee without a verified company email: not added automatically, no web-app redirect.
+    if (body.under_review && els.review) { els.review.hidden = false; postHeight(); return; }
     // The server picked the destination: the company's invite link, or the per-preview-type fallback.
     var redirect = body.redirect_url;
     if (redirect && /^https?:\/\//i.test(redirect)) {

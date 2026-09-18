@@ -47,6 +47,9 @@
         <label for="email">Email</label>
         <input id="email" name="email" type="email" required autocomplete="email" inputmode="email" placeholder="you@company.com">
         <div class="m12-hint" id="email-suggest" hidden></div>
+      <div class="m12-notice" id="email-notice" hidden>
+      <strong>This doesn’t look like a company email.</strong> Employees are added automatically only with an email on their company’s domain. You can still submit, but your request will be reviewed — please get in touch with your HR team afterwards to make sure you’re added.
+        </div>
         <div class="m12-error" data-for="email"></div>
       </div>
 
@@ -107,6 +110,15 @@
       <p class="m12-redirect-warn"><strong>Don’t skip this step.</strong> Your login is what gets you into Tuesday’s session. Use the same email you just entered: <span id="redirect-email"></span></p>
       <p class="m12-redirect-count">Taking you there in <span id="redirect-count">30</span> seconds…</p>
       <button type="button" class="m12-btn" id="redirect-now"><span>Continue now →</span></button>
+    </div>
+
+    <div class="m12-card m12-review" id="m12-review" hidden>
+      <div class="m12-redirect-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2.5 2.5"/></svg>
+      </div>
+      <h2>Thanks — your request is under review</h2>
+      <p>Because your email isn’t on your company’s domain, we can’t add you automatically.</p>
+      <p class="m12-redirect-warn"><strong>Next step:</strong> please get in touch with your HR team and let them know you’ve signed up, so they can make sure you’re added.</p>
     </div>
 
     <div class="m12-card m12-success" id="m12-success" hidden>
