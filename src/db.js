@@ -69,6 +69,8 @@ async function migrate() {
       url_params           JSONB,                    -- every query param on the embed URL
       page_url             TEXT,                     -- parent funnel page, when known
       redirect_url         TEXT,                     -- where we sent them after submitting
+      under_review         BOOLEAN NOT NULL DEFAULT FALSE, -- employee whose email isn't on their company's domain
+      review_reason        TEXT,                     -- company_not_registered | email_domain_mismatch
       ip                   TEXT,
       user_agent           TEXT,
       ghl_webhook_status   TEXT,                     -- sent | failed | skipped
@@ -78,6 +80,8 @@ async function migrate() {
     ALTER TABLE form_submissions ALTER COLUMN company_name DROP NOT NULL;
     ALTER TABLE form_submissions ADD COLUMN IF NOT EXISTS redirect_url TEXT;
     ALTER TABLE form_submissions ALTER COLUMN phone DROP NOT NULL;
+    ALTER TABLE form_submissions ADD COLUMN IF NOT EXISTS under_review BOOLEAN NOT NULL DEFAULT FALSE;
+    ALTER TABLE form_submissions ADD COLUMN IF NOT EXISTS review_reason TEXT;
     CREATE INDEX IF NOT EXISTS form_submissions_created_at_idx ON form_submissions (created_at DESC);
     CREATE INDEX IF NOT EXISTS form_submissions_email_idx ON form_submissions (lower(email));
     CREATE INDEX IF NOT EXISTS form_submissions_company_idx ON form_submissions (matched_company_id);
@@ -152,12 +156,14 @@ async function insertSubmission(s) {
   const { rows } = await pool.query(
     `INSERT INTO form_submissions
        (company_name, matched_company_id, matched_company_name, match_method, match_confidence,
-        email, email_domain, full_name, phone, city, state, preview_type, url_params, page_url, redirect_url, ip, user_agent)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+        email, email_domain, full_name, phone, city, state, preview_type, url_params, page_url, redirect_url,
+        under_review, review_reason, ip, user_agent)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
      RETURNING id, created_at`,
     [s.company_name, s.matched_company_id, s.matched_company_name, s.match_method, s.match_confidence,
      s.email, s.email_domain, s.full_name, s.phone, s.city, s.state, s.preview_type,
-     s.url_params ? JSON.stringify(s.url_params) : null, s.page_url, s.redirect_url, s.ip, s.user_agent]
+     s.url_params ? JSON.stringify(s.url_params) : null, s.page_url, s.redirect_url,
+     Boolean(s.under_review), s.review_reason || null, s.ip, s.user_agent]
   );
   return rows[0];
 }

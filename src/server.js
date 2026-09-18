@@ -15,10 +15,12 @@ const ADMIN_API_KEY = process.env.ADMIN_API_KEY || '';
 
 const STATE_CODES = new Set(locations.states.map((s) => s.code));
 
-// Preview types (set via URL on the embed). Company name is only collected from executive/employee visitors.
+// Preview types (set via URL on the embed). Company name is only collected from executive/employee visitors;
+// hr sign-ups are filed under a fixed group and independents carry no company at all.
 const PREVIEW_TYPES = ['executive', 'employee', 'hr', 'independent'];
 const DEFAULT_PREVIEW_TYPE = 'independent';
 const COMPANY_REQUIRED_FOR = new Set(['executive', 'employee']);
+const HR_GROUP_NAME = 'HR Preview Group';
 
 /**
  * Where people go after submitting, in priority order:
@@ -170,24 +172,38 @@ app.post('/api/submissions', submitLimiter, async (req, res, next) => {
   if (Object.keys(errors).length) return res.status(422).json({ ok: false, errors });
 
   try {
-    // Resolve the registered company. The server is the final authority, whatever the browser sent.
-    const companies = await db.listCompaniesForRouting();
-    const result = match.match(companies, input.company_name, input.email);
     let matched = null, method = 'none', confidence = null;
+    let underReview = false, reviewReason = null;
 
-    const selected = input.company_id && companies.find((c) => c.id === input.company_id);
-    if (selected) {
-      matched = selected; method = 'selected'; confidence = 1;
-    } else if (result.autoMatch) {
-      matched = result.autoMatch; method = 'name'; confidence = result.best.score;
-    } else if (result.byDomain) {
-      matched = result.byDomain; method = 'domain'; confidence = result.best ? result.best.score : null;
-    } else if (result.best) {
-      // Close but not close enough to assert; record the score so it's reviewable.
-      confidence = result.best.score;
+    if (input.preview_type === 'hr') {
+      input.company_name = HR_GROUP_NAME;          // everyone in the HR preview is filed together
+    } else if (input.preview_type === 'independent') {
+      input.company_name = '';                     // no company at all
+    } else {
+      // Resolve the registered company. The server is the final authority, whatever the browser sent.
+      const companies = await db.listCompaniesForRouting();
+      const result = match.match(companies, input.company_name, input.email);
+      const selected = input.company_id && companies.find((c) => c.id === input.company_id);
+      if (selected) {
+        matched = selected; method = 'selected'; confidence = 1;
+      } else if (result.autoMatch) {
+        matched = result.autoMatch; method = 'name'; confidence = result.best.score;
+      } else if (result.byDomain) {
+        matched = result.byDomain; method = 'domain'; confidence = result.best ? result.best.score : null;
+      } else if (result.best) {
+        // Close but not close enough to assert; record the score so it's reviewable.
+        confidence = result.best.score;
+      }
+
+      // Employees are only added automatically when their email is on their company's domain.
+      if (input.preview_type === 'employee') {
+        const emailRoot = match.rootDomain(match.emailDomain(input.email));
+        if (!matched) { underReview = true; reviewReason = 'company_not_registered'; }
+        else if (emailRoot !== match.rootDomain(matched.domain)) { underReview = true; reviewReason = 'email_domain_mismatch'; }
+      }
     }
 
-    const redirectUrl = resolveRedirect({ matched, input, id: null });
+    const redirectUrl = underReview ? null : resolveRedirect({ matched, input, id: null });
 
     const row = await db.insertSubmission({
       ...input,
@@ -199,6 +215,8 @@ app.post('/api/submissions', submitLimiter, async (req, res, next) => {
       match_confidence: confidence,
       email_domain: match.emailDomain(input.email),
       redirect_url: redirectUrl,
+      under_review: underReview,
+      review_reason: reviewReason,
       ip: req.ip,
       user_agent: str(req.get('user-agent'), 500),
     });
@@ -213,6 +231,7 @@ app.post('/api/submissions', submitLimiter, async (req, res, next) => {
       matched_company: matched ? { id: matched.id, name: matched.name } : null,
       match_method: method,
       redirect_url: finalRedirect,
+      under_review: underReview,
     });
 
     sendToGhl(row.id, {
@@ -232,6 +251,8 @@ app.post('/api/submissions', submitLimiter, async (req, res, next) => {
       city: input.city,
       state: input.state,
       preview_type: input.preview_type,
+      under_review: underReview,
+      review_reason: reviewReason,
       redirect_url: finalRedirect,
       page_url: input.page_url,
       url_params: input.url_params,
@@ -239,7 +260,7 @@ app.post('/api/submissions', submitLimiter, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-/** Company invite link > ?redirect= (allowed hosts only) > per-preview-type env > generic env. */
+/** Company invite link (executive/employee) > ?redirect= (allowed hosts only) > per-preview-type env > generic env. */
 function resolveRedirect({ matched, input }) {
   if (matched && matched.invite_link && isHttpsUrl(matched.invite_link)) return matched.invite_link;
   return security.safeRedirect(input.redirect) || REDIRECT_BY_TYPE[input.preview_type] || REDIRECT_URL || null;

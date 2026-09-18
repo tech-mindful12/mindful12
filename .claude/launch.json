@@ -12,7 +12,8 @@
         "GHL_WEBHOOK_URL": "http://localhost:3000/health",
         "ADMIN_PASSWORD": "devpass",
         "REDIRECT_URL_INDEPENDENT": "https://mindful12.com/independent",
-        "REDIRECT_URL_HR": "https://mindful12.com/hr"
+        "REDIRECT_URL_HR": "https://mindful12.com/hr",
+        "REDIRECT_URL_EMPLOYEE": "https://mindful12.com/employee"
       },
       "port": 3000,
       "autoPort": true

@@ -86,10 +86,14 @@
 .lp-btn:hover .lp-arrow { transform: translateX(3px); }
 .lp-btn:hover { background: var(--m12-accent-hover); }
 .lp-back {
-  font: inherit; font-size: 18px; font-weight: 500; color: var(--m12-muted);
-  background: none; border: 0; padding: 0; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 8px;
+  font: inherit; font-size: 15px; font-weight: 600; color: #fff;
+  background: var(--m12-accent); border: 0; border-radius: var(--m12-radius);
+  padding: 10px 18px 10px 14px; cursor: pointer; transition: background .15s;
 }
-.lp-back:hover { color: var(--m12-text); }
+.lp-back:hover { background: var(--m12-accent-hover); }
+.lp-back .lp-arrow { flex: none; transition: transform .15s; }
+.lp-back:hover .lp-arrow { transform: translateX(-3px); }
 
 /* The form sits inside the step, not in its own card */
 .m12-card--inline { padding: 0; background: transparent; }

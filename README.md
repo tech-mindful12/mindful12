@@ -76,10 +76,12 @@ The preview type sets the message above the form and whether Company Name is req
 |---|---|---|
 | `executive` | You're here because your company is considering Mindful12. | shown, required |
 | `employee` | You're here because your company has invited you to preview Mindful12. | shown, required |
-| `hr` | You're here to see how Mindful12 could support your people. | hidden |
-| `independent` (default) | You're exploring Mindful12 on your own. | hidden |
+| `hr` | You're here to see how Mindful12 could support your people. | hidden — stored as **"HR Preview Group"** |
+| `independent` (default) | You're exploring Mindful12 on your own. | hidden — stored as null |
 
 Phone is optional for everyone (validated only if entered).
+
+**Employee domain check.** Employees are added automatically only when their email is on their (matched) company's domain. Otherwise the submission is stored with `under_review = true` (`review_reason` = `email_domain_mismatch` or `company_not_registered`), no redirect happens, the form shows "your request is under review — contact your HR team", and the GHL payload carries `under_review: true`. The form also warns live under the email field as soon as it can tell.
 
 Messages and options live in `PREVIEW_TYPES` at the top of `public/form.js`; the server-side list is in `src/server.js`.
 
