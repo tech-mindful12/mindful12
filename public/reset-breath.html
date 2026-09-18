@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>The Reset Breath</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/flow.css">
+  <link rel="stylesheet" href="/reset-breath.css">
+</head>
+<body class="bg-transparent">
+  <main class="m12 m12--flow m12--reset">
+
+    <!-- Read-along practice -->
+    <section class="rb-section">
+      <p class="lp-eyebrow">The Reset Breath</p>
+      <h1 class="lp-h1">A simple way to soften stress in real time</h1>
+      <hr class="lp-rule">
+      <p class="lp-body lp-body--tight rb-intro">For one quiet moment, put the world on hold.<br>And let the words set the pace.<br>Read them slowly, and experience the Reset Breath.</p>
+
+      <div class="rb-steps">
+        <div class="rb-step rb-step--accent">
+          <h2 class="rb-cue">Begin by noticing that you are breathing…</h2>
+        </div>
+
+        <div class="rb-step">
+          <h2 class="rb-cue">Now take a slow breath in through your nose…</h2>
+          <p class="rb-note">Feel your chest gently expand.</p>
+        </div>
+
+        <div class="rb-step">
+          <h2 class="rb-cue">Now slowly breathe out through your mouth…</h2>
+          <p class="rb-note">Let your shoulders soften.<br>Feel your jaw relax.</p>
+        </div>
+
+        <div class="rb-step rb-step--accent">
+          <h2 class="rb-cue">Take one more breath</h2>
+        </div>
+
+        <div class="rb-step">
+          <h2 class="rb-cue">Slowly in through the nose…</h2>
+          <p class="rb-note">Feel your chest gently expand.</p>
+        </div>
+
+        <div class="rb-step">
+          <h2 class="rb-cue">And slowly out through the mouth…</h2>
+          <p class="rb-note">Easy.<br>Quiet.<br>No force.</p>
+        </div>
+
+        <div class="rb-step rb-step--accent">
+          <h2 class="rb-cue">There…</h2>
+          <p class="rb-note">Notice how you feel.</p>
+        </div>
+
+        <div class="rb-step">
+          <h2 class="rb-cue">Your breath is always there to soften tension and ground you in the moment.</h2>
+          <p class="rb-note">Come back to the Reset Breath as often as you like, letting the feeling grow more familiar and stay with you throughout your day.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Guided audio -->
+    <section class="rb-section rb-section--surface">
+      <p class="lp-eyebrow">Take the Reset Breath with you</p>
+      <h2 class="rb-h2">A quiet minute whenever you need it.</h2>
+      <p class="lp-body">Now press play and let yourself be guided through the Reset Breath.</p>
+
+      <div class="rb-player" id="rb-player">
+        <audio id="rb-audio" preload="metadata" src="https://assets.cdn.filesafe.space/dHLyEQnQea2OqrWprf6f/media/6aada11fa721ff13d5c538fe.mp3"></audio>
+        <button type="button" class="rb-play" id="rb-play" aria-label="Play the Reset Breath">
+          <svg class="rb-icon rb-icon--play" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+          <svg class="rb-icon rb-icon--pause" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+          <span class="rb-play-label" id="rb-play-label">Listen to the Reset Breath</span>
+        </button>
+        <div class="rb-progress" id="rb-progress" role="slider" aria-label="Playback position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">
+          <div class="rb-progress-fill" id="rb-progress-fill"></div>
+        </div>
+        <div class="rb-times"><span id="rb-current">0:00</span><span id="rb-duration">–:––</span></div>
+      </div>
+    </section>
+
+    <!-- Closing -->
+    <section class="rb-section">
+      <p class="lp-eyebrow">That was the practice</p>
+      <h2 class="rb-h2">The stress may still be there.</h2>
+      <p class="lp-body lp-body--tight">The email still needs an answer.<br>The conversation still needs to happen.<br>The decision still needs to be made.</p>
+      <p class="lp-body rb-muted">But now there is a little more space between the tension and what happens next.</p>
+      <div class="lp-callout">Sometimes, one breath is enough to change the next moment.</div>
+    </section>
+
+  </main>
+
+  <script src="/reset-breath.js"></script>
+</body>
+</html>

@@ -94,6 +94,10 @@ Two editions of the Monday "Setting the Stage" walkthrough (8 steps, same Contin
 
 Embed with `data-page="stage"` or `data-page="stage-executive"`. `public/stage.js` keeps the "n / N" footer in sync and reports height to the embed.
 
+## The Reset Breath page
+
+`https://YOUR-APP/reset-breath` — `public/reset-breath.html`: the read-along practice, a guided-audio section with an inline player (MP3 hosted on GHL's CDN; URL in the `<audio>` tag), and the closing reflection. Embed with `data-page="reset-breath"`. Player logic in `public/reset-breath.js`, styles in `public/reset-breath.css`.
+
 ## How company matching works
 
 1. **Dropdown** — the Company Name field autocompletes from `registered_companies` via `GET /api/companies/lookup` once 3+ characters are typed. The browser never receives the list — only up to 3 close matches (names + ids) for what was typed, so registered companies can't be browsed.
