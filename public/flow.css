@@ -75,7 +75,7 @@
 .lp-list li i { color: var(--m12-accent); font-size: 18px; flex: none; }
 
 .lp-cta { display: flex; align-items: center; gap: 18px; margin-top: 26px; }
-.lp-cta--form { margin-top: 14px; justify-content: center; }
+.lp-cta--form { margin-top: 14px; justify-content: flex-start; }
 .lp-btn {
   display: inline-flex; align-items: center; gap: 10px;
   font: inherit; font-size: 18px; font-weight: 600; color: #fff;
@@ -86,10 +86,11 @@
 .lp-btn:hover .lp-arrow { transform: translateX(3px); }
 .lp-btn:hover { background: var(--m12-accent-hover); }
 .lp-back {
-  display: inline-flex; align-items: center; gap: 8px;
-  font: inherit; font-size: 15px; font-weight: 600; color: #fff;
+  order: -1; /* sits to the left of Continue */
+  display: inline-flex; align-items: center; gap: 10px;
+  font: inherit; font-size: 18px; font-weight: 600; color: #fff;
   background: var(--m12-accent); border: 0; border-radius: var(--m12-radius);
-  padding: 10px 18px 10px 14px; cursor: pointer; transition: background .15s;
+  padding: 13px 28px 13px 24px; cursor: pointer; transition: background .15s;
 }
 .lp-back:hover { background: var(--m12-accent-hover); }
 .lp-back .lp-arrow { flex: none; transition: transform .15s; }
