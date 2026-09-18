@@ -83,6 +83,15 @@ Phone is optional for everyone (validated only if entered).
 
 Messages and options live in `PREVIEW_TYPES` at the top of `public/form.js`; the server-side list is in `src/server.js`.
 
+## Setting the Stage pages
+
+Two editions of the Monday "Setting the Stage" walkthrough (8 steps, same Continue/Back mechanics and styling as the signup flow), content from `Mindful12_Executive_Preview_Setting_the_Stage.pdf`:
+
+- `https://YOUR-APP/setting-the-stage/executive` — the PDF verbatim
+- `https://YOUR-APP/setting-the-stage` — general edition: same copy minus the executive/team references ("Executive Preview" → "Preview"; the "See What Your Team Is Noticing" step and "Your team is doing this with you." are dropped) — **placeholder until Bob supplies the non-executive copy**
+
+Embed with `data-page="stage"` or `data-page="stage-executive"`. Markup in `public/setting-the-stage.html`; audience switching in `public/stage.js` (`data-audience` / `data-audience-text`).
+
 ## How company matching works
 
 1. **Dropdown** — the Company Name field autocompletes from `registered_companies` via `GET /api/companies/lookup` once 3+ characters are typed. The browser never receives the list — only up to 3 close matches (names + ids) for what was typed, so registered companies can't be browsed.
