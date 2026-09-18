@@ -102,6 +102,10 @@ Embed with `data-page="stage"` or `data-page="stage-executive"`. `public/stage.j
 
 `https://YOUR-APP/faq` — `public/faq.html`: intro, **One Minute App Tour** (MP4 from GHL's CDN in a native player, `preload="metadata"`), the questions as an accordion (`<details>`), and an **Ask us directly** form. Questions are stored in `faq_questions` and POSTed to `GHL_QUESTION_WEBHOOK_URL` (falls back to `GHL_WEBHOOK_URL`) with `event: "faq_question"`, `full_name`, `email`, `question`. Rate-limited (10 / 10 min per IP) with a honeypot. Admin: `GET /api/admin/questions`. Embed with `data-page="faq"`. Edit the Q&A list in `faq.html` (it's plain HTML).
 
+## Email previews
+
+`https://YOUR-APP/email-previews` — review gallery of every email in `emails/` (subject, preview text, send timing, desktop/mobile toggle, open-full-size links). Emails render with sample merge data (`?sample=1` swaps `{{contact.first_name}}` → Jane and the unsubscribe field → a link). Data comes from `emails/manifest.json`, written by `python emails/build.py` from the `META` table in `build.py`.
+
 ## How company matching works
 
 1. **Dropdown** — the Company Name field autocompletes from `registered_companies` via `GET /api/companies/lookup` once 3+ characters are typed. The browser never receives the list — only up to 3 close matches (names + ids) for what was typed, so registered companies can't be browsed.

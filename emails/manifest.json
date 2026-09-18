@@ -1,0 +1,92 @@
+[
+  {
+    "file": "00-create-your-password.html",
+    "subject": "Create your Mindful 12 password (proposed)",
+    "preview": "",
+    "when": "Right after the registration form. Opens the web app to set a password."
+  },
+  {
+    "file": "01-registration-complete.html",
+    "subject": "Your registration is complete. Here’s what’s next",
+    "preview": "Your password is set, and your place in the Mindful 12 Preview is confirmed.",
+    "when": "After the password is created — sign-ups Tue–Thu"
+  },
+  {
+    "file": "01b-registration-complete-sent-fri-sun.html",
+    "subject": "Your registration is complete. Here’s what’s next",
+    "preview": "same",
+    "when": "Sign-ups Fri–Sun (“Today” replaces “Friday”)"
+  },
+  {
+    "file": "01c-registration-complete-sent-mon-DRAFT.html",
+    "subject": "Your registration is complete. Here’s what’s next",
+    "preview": "same",
+    "when": "Sign-ups Mon — DRAFT, copy still to confirm"
+  },
+  {
+    "file": "02-friday-reset-breath.html",
+    "subject": "Your first experience with mindful awareness (proposed)",
+    "preview": "Today, we introduce the foundation for everything that follows.",
+    "when": "Friday before launch"
+  },
+  {
+    "file": "03-monday-setting-the-stage.html",
+    "subject": "Mindful 12 starts here",
+    "preview": "There’s one simple idea behind everything you’re about to experience.",
+    "when": "Monday before launch"
+  },
+  {
+    "file": "04-week1-tuesday-challenge.html",
+    "subject": "Your Mindfulness Challenge is ready",
+    "preview": "It takes about 5 minutes.",
+    "when": "Week 1 — Tuesday 7:00 AM ET"
+  },
+  {
+    "file": "05-week1-thursday-follow-up.html",
+    "subject": "Your Follow-up is ready",
+    "preview": "It takes about 5 minutes.",
+    "when": "Week 1 — Thursday 7:00 AM ET"
+  },
+  {
+    "file": "06-week1-friday-second-follow-up.html",
+    "subject": "Your second Follow-up is ready",
+    "preview": "It takes less than 5 minutes.",
+    "when": "Week 1 only — Friday 7:00 AM ET"
+  },
+  {
+    "file": "07-week2-tuesday-challenge.html",
+    "subject": "Your next Challenge is ready",
+    "preview": "You can’t change what you can’t see",
+    "when": "Week 2 — Tuesday (body copy from the Google Doc still to drop in)"
+  },
+  {
+    "file": "08-week2-thursday-follow-up.html",
+    "subject": "Your next Follow-up is ready",
+    "preview": "You can’t change what you can’t see",
+    "when": "Week 2 — Thursday"
+  },
+  {
+    "file": "09-weeks3-12-tuesday-challenge.html",
+    "subject": "Your next Challenge is ready",
+    "preview": "It takes about 5 minutes.",
+    "when": "Weeks 3–12 — every Tuesday"
+  },
+  {
+    "file": "10-weeks3-12-thursday-follow-up.html",
+    "subject": "Your next Follow-up is ready",
+    "preview": "It takes about 5 minutes.",
+    "when": "Weeks 3–12 — every Thursday"
+  },
+  {
+    "file": "11-week-one-done-hr.html",
+    "subject": "Week one, done",
+    "preview": "That’s your first week of Mindful 12 finished.",
+    "when": "End of the trial week — HR"
+  },
+  {
+    "file": "12-week-one-done-independent.html",
+    "subject": "Week one, done",
+    "preview": "That’s your first week of Mindful 12 finished.",
+    "when": "End of the trial week — Independent"
+  }
+]

@@ -506,8 +506,32 @@ FILES = {
     "12-week-one-done-independent.html": week_one_done_independent(),
 }
 
+# Shown on /email-previews (subject, preview text, when it sends). Keep in step with FILES.
+META = {
+    "00-create-your-password.html": ("Create your Mindful 12 password (proposed)", "", "Right after the registration form. Opens the web app to set a password."),
+    "01-registration-complete.html": ("Your registration is complete. Here’s what’s next", "Your password is set, and your place in the Mindful 12 Preview is confirmed.", "After the password is created — sign-ups Tue–Thu"),
+    "01b-registration-complete-sent-fri-sun.html": ("Your registration is complete. Here’s what’s next", "same", "Sign-ups Fri–Sun (“Today” replaces “Friday”)"),
+    "01c-registration-complete-sent-mon-DRAFT.html": ("Your registration is complete. Here’s what’s next", "same", "Sign-ups Mon — DRAFT, copy still to confirm"),
+    "02-friday-reset-breath.html": ("Your first experience with mindful awareness (proposed)", "Today, we introduce the foundation for everything that follows.", "Friday before launch"),
+    "03-monday-setting-the-stage.html": ("Mindful 12 starts here", "There’s one simple idea behind everything you’re about to experience.", "Monday before launch"),
+    "04-week1-tuesday-challenge.html": ("Your Mindfulness Challenge is ready", "It takes about 5 minutes.", "Week 1 — Tuesday 7:00 AM ET"),
+    "05-week1-thursday-follow-up.html": ("Your Follow-up is ready", "It takes about 5 minutes.", "Week 1 — Thursday 7:00 AM ET"),
+    "06-week1-friday-second-follow-up.html": ("Your second Follow-up is ready", "It takes less than 5 minutes.", "Week 1 only — Friday 7:00 AM ET"),
+    "07-week2-tuesday-challenge.html": ("Your next Challenge is ready", "You can’t change what you can’t see", "Week 2 — Tuesday (body copy from the Google Doc still to drop in)"),
+    "08-week2-thursday-follow-up.html": ("Your next Follow-up is ready", "You can’t change what you can’t see", "Week 2 — Thursday"),
+    "09-weeks3-12-tuesday-challenge.html": ("Your next Challenge is ready", "It takes about 5 minutes.", "Weeks 3–12 — every Tuesday"),
+    "10-weeks3-12-thursday-follow-up.html": ("Your next Follow-up is ready", "It takes about 5 minutes.", "Weeks 3–12 — every Thursday"),
+    "11-week-one-done-hr.html": ("Week one, done", "That’s your first week of Mindful 12 finished.", "End of the trial week — HR"),
+    "12-week-one-done-independent.html": ("Week one, done", "That’s your first week of Mindful 12 finished.", "End of the trial week — Independent"),
+}
+
 if __name__ == "__main__":
+    import json
     for name, content in FILES.items():
         with open(os.path.join(HERE, name), "w", encoding="utf-8") as f:
             f.write(content)
         print("wrote", name, len(content), "bytes")
+    manifest = [{"file": n, "subject": META[n][0], "preview": META[n][1], "when": META[n][2]} for n in FILES]
+    with open(os.path.join(HERE, "manifest.json"), "w", encoding="utf-8") as f:
+        json.dump(manifest, f, indent=2, ensure_ascii=False)
+    print("wrote manifest.json")
