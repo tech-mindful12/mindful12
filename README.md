@@ -190,7 +190,7 @@ Seeded with Baystate Benefit Services (`baystatebenefits.com`) and Central Bosto
 }
 ```
 
-**`invite_link`** is the community invite the contact should get, resolved in this order: the matched registered company's Invite Link → `INVITE_LINK_<PREVIEW_TYPE>` env var → built-in default (independent → `mindful-12` group, HR → `human-resource-preview-group`). It's `null` for under-review sign-ups so nobody gets invited before approval.
+**`invite_link`** is the community invite the contact should get, resolved in this order: the matched registered company's Invite Link → `INVITE_LINK_<PREVIEW_TYPE>` env var → built-in default (independent → `mindful-12` group, HR → `human-resource-preview-group`). Under-review sign-ups get it too (alongside `under_review: true`), so the GHL workflow decides whether to send it.
 
 ## Local development
 

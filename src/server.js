@@ -42,7 +42,7 @@ const REDIRECT_BY_TYPE = Object.fromEntries(
  *   1. the matched registered company's invite_link
  *   2. INVITE_LINK_<PREVIEW_TYPE> env var
  *   3. the built-in default below (independent + HR groups)
- * Under-review sign-ups get null so nobody is invited before HR/us approve them.
+ * Under-review sign-ups get the same link as everyone else; GHL decides what to do with it.
  */
 const DEFAULT_INVITE_LINKS = {
   independent: 'https://login.mindful12.com/communities/groups/mindful-12/home?invite=6ab193a3df56a636ece3cba3',
@@ -305,7 +305,7 @@ app.post('/api/submissions', submitLimiter, async (req, res, next) => {
       preview_type: input.preview_type,
       under_review: underReview,
       review_reason: reviewReason,
-      invite_link: resolveInviteLink({ matched, input, underReview }),
+      invite_link: resolveInviteLink({ matched, input }),
       redirect_url: finalRedirect,
       page_url: input.page_url,
       url_params: input.url_params,
@@ -373,8 +373,7 @@ async function postWebhook(url, payload) {
 }
 
 /** Company invite link (executive/employee) > ?redirect= (allowed hosts only) > per-preview-type env > generic env. */
-function resolveInviteLink({ matched, input, underReview }) {
-  if (underReview) return null;
+function resolveInviteLink({ matched, input }) {
   if (matched && matched.invite_link && isHttpsUrl(matched.invite_link)) return matched.invite_link;
   return INVITE_BY_TYPE[input.preview_type] || null;
 }
