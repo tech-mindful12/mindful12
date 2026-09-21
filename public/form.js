@@ -14,7 +14,7 @@
     previewType: $('preview_type'), submit: $('submit-btn'), formError: $('form-error'),
     success: $('m12-success'), successText: $('success-text'),
     redirect: $('m12-redirect'), redirectEmail: $('redirect-email'), redirectCount: $('redirect-count'), redirectNow: $('redirect-now'),
-    review: $('m12-review'), emailNotice: $('email-notice'),
+    review: $('m12-review'), emailNotice: $('email-notice'), passcode: $('passcode'),
     companyField: $('company-field'), companyOptional: $('company-optional'), companyHelp: $('company-help'),
     context: $('m12-context'), contextText: $('context-text'), contextChange: $('context-change'),
     chooser: $('context-chooser'), options: $('context-options'), confirm: $('context-confirm'), cancel: $('context-cancel'),
@@ -319,21 +319,27 @@
   els.email.addEventListener('input', function () { debounce('email', checkEmailDomain, 500); });
 
   /**
-   * Employees: the email has to be on their company's domain to be added automatically.
-   * Warn as soon as we can tell it isn't, so they can switch to a work address (or know what to expect).
+   * Employees + execs: the email has to be on their company's domain to be added automatically,
+   * unless they know the company's passcode. Warn as soon as we can tell it isn't and reveal the
+   * passcode field, so they can switch to a work address, enter the passcode, or know what to expect.
    */
-  function isEmployee() { return els.previewType.value === 'employee'; }
+  function needsDomainCheck() { return els.previewType.value === 'employee' || els.previewType.value === 'executive'; }
+
+  function setNotice(show) {
+    els.emailNotice.hidden = !show;
+    if (!show && els.passcode) { els.passcode.value = ''; setError('passcode', ''); }
+    postHeight();
+  }
 
   function checkEmployeeDomain() {
-    if (!els.emailNotice || !isEmployee()) return;
+    if (!els.emailNotice || !needsDomainCheck()) { if (els.emailNotice) setNotice(false); return; }
     var email = els.email.value.trim(), company = els.company.value.trim();
-    if (!/@[^@\s]+\.[^@\s]+$/.test(email) || !company) { els.emailNotice.hidden = true; postHeight(); return; }
+    if (!/@[^@\s]+\.[^@\s]+$/.test(email) || !company) { setNotice(false); return; }
     lookup(company, email).then(function (r) {
-      if (els.email.value.trim() !== email || !isEmployee()) return;
+      if (els.email.value.trim() !== email || !needsDomainCheck()) return;
       var selectedId = Number(els.companyId.value) || null;
       var verified = r.byDomain && (!selectedId || r.byDomain.id === selectedId);
-      els.emailNotice.hidden = Boolean(verified);
-      postHeight();
+      setNotice(!verified);
     });
   }
   els.email.addEventListener('blur', checkEmployeeDomain);
@@ -418,7 +424,7 @@
     if (digits.length && digits.length < 10) errors.phone = 'Enter a valid phone number, or leave it blank';
     if (!els.state.value) errors.state = 'Select a state';
     if (!els.city.value.trim()) errors.city = 'Enter your city';
-    ['company_name', 'email', 'full_name', 'phone', 'state', 'city'].forEach(function (f) { setError(f, errors[f] || ''); });
+    ['company_name', 'email', 'full_name', 'phone', 'state', 'city', 'passcode'].forEach(function (f) { setError(f, errors[f] || ''); });
     return errors;
   }
 
@@ -449,6 +455,7 @@
       city: els.city.value.trim(),
       state: els.state.value,
       preview_type: els.previewType.value,
+      passcode: els.passcode && !els.emailNotice.hidden ? els.passcode.value.trim() : '',
       url_params: allParams,
       page_url: pageUrl || null,
       redirect: params.get('redirect') || null, // validated server-side against the allowed hosts

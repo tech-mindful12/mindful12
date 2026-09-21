@@ -41,7 +41,7 @@ async function migrate() {
       website     TEXT,
       invite_link TEXT,                              -- where this company's people land after submitting
       group_link  TEXT,                              -- the company's community group (sent to GHL as group_link)
-      passcode    TEXT,                              -- reserved; not used by the form yet
+      passcode    TEXT,                              -- lets employees/execs off the company domain through without review
       tag         TEXT,                              -- free-text label for the admin's own grouping
       active      BOOLEAN NOT NULL DEFAULT TRUE,
       created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -125,7 +125,7 @@ async function listCompanies() {
 /** Everything the server needs to route a submission (active companies only). */
 async function listCompaniesForRouting() {
   const { rows } = await pool.query(
-    `SELECT id, name, domain, website, invite_link, group_link FROM registered_companies WHERE active ORDER BY name`
+    `SELECT id, name, domain, website, invite_link, group_link, passcode FROM registered_companies WHERE active ORDER BY name`
   );
   return rows;
 }
