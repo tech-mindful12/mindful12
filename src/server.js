@@ -306,6 +306,7 @@ app.post('/api/submissions', submitLimiter, async (req, res, next) => {
       under_review: underReview,
       review_reason: reviewReason,
       invite_link: resolveInviteLink({ matched, input }),
+      group_link: matched && matched.group_link ? matched.group_link : null,
       redirect_url: finalRedirect,
       page_url: input.page_url,
       url_params: input.url_params,
@@ -445,6 +446,7 @@ function parseCompany(body) {
     domain: match.rootDomain(str(b.domain)),
     website: str(b.website, 500),
     invite_link: str(b.invite_link, 2000),
+    group_link: str(b.group_link, 2000),
     passcode: str(b.passcode, 200),
     tag: str(b.tag, 100),
     active: b.active === undefined ? true : Boolean(b.active),
@@ -454,6 +456,7 @@ function parseCompany(body) {
   if (!c.domain || !c.domain.includes('.')) errors.domain = 'Enter a domain like example.com';
   if (c.website && !/^https?:\/\//i.test(c.website)) c.website = 'https://' + c.website;
   if (c.invite_link && !isHttpsUrl(c.invite_link)) errors.invite_link = 'Invite link must start with https://';
+  if (c.group_link && !isHttpsUrl(c.group_link)) errors.group_link = 'Group link must start with https://';
   return { company: c, errors };
 }
 

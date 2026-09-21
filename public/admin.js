@@ -95,7 +95,7 @@
     postHeight();
   }
 
-  var FIELDS = ['name', 'domain', 'website', 'invite_link', 'passcode', 'tag'];
+  var FIELDS = ['name', 'domain', 'website', 'invite_link', 'group_link', 'passcode', 'tag'];
 
   function buildRow(c) {
     var tr = els.template.content.firstElementChild.cloneNode(true);

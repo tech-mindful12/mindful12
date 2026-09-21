@@ -52,7 +52,7 @@
 .ad-table input:not(:disabled):focus { border-color: var(--m12-accent); box-shadow: 0 0 0 3px rgba(45,103,255,.14); outline: none; }
 .ad-table input.invalid { border-color: var(--m12-error); }
 .ad-table input[type="checkbox"] { accent-color: var(--m12-accent); width: 16px; height: 16px; }
-.ad-table td[data-col="invite_link"] { min-width: 260px; }
+.ad-table td[data-col="invite_link"], .ad-table td[data-col="group_link"] { min-width: 260px; }
 .ad-table td[data-col="name"] { min-width: 180px; }
 .ad-table td[data-col="tag"] { min-width: 110px; }
 
