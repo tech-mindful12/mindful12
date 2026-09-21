@@ -37,6 +37,21 @@ const REDIRECT_BY_TYPE = Object.fromEntries(
   PREVIEW_TYPES.map((t) => [t, process.env[`REDIRECT_URL_${t.toUpperCase()}`] || ''])
 );
 
+/**
+ * Community invite link sent to GHL with every sign-up (payload field `invite_link`):
+ *   1. the matched registered company's invite_link
+ *   2. INVITE_LINK_<PREVIEW_TYPE> env var
+ *   3. the built-in default below (independent + HR groups)
+ * Under-review sign-ups get null so nobody is invited before HR/us approve them.
+ */
+const DEFAULT_INVITE_LINKS = {
+  independent: 'https://login.mindful12.com/communities/groups/mindful-12/home?invite=6ab193a3df56a636ece3cba3',
+  hr: 'https://login.mindful12.com/communities/groups/human-resource-preview-group/home?invite=6ab193bce68c82f54025d468',
+};
+const INVITE_BY_TYPE = Object.fromEntries(
+  PREVIEW_TYPES.map((t) => [t, process.env[`INVITE_LINK_${t.toUpperCase()}`] || DEFAULT_INVITE_LINKS[t] || ''])
+);
+
 const app = express();
 app.set('trust proxy', 1); // exactly one hop (Railway's proxy) so req.ip can't be spoofed via X-Forwarded-For
 app.disable('x-powered-by');
@@ -290,6 +305,7 @@ app.post('/api/submissions', submitLimiter, async (req, res, next) => {
       preview_type: input.preview_type,
       under_review: underReview,
       review_reason: reviewReason,
+      invite_link: resolveInviteLink({ matched, input, underReview }),
       redirect_url: finalRedirect,
       page_url: input.page_url,
       url_params: input.url_params,
@@ -357,6 +373,12 @@ async function postWebhook(url, payload) {
 }
 
 /** Company invite link (executive/employee) > ?redirect= (allowed hosts only) > per-preview-type env > generic env. */
+function resolveInviteLink({ matched, input, underReview }) {
+  if (underReview) return null;
+  if (matched && matched.invite_link && isHttpsUrl(matched.invite_link)) return matched.invite_link;
+  return INVITE_BY_TYPE[input.preview_type] || null;
+}
+
 function resolveRedirect({ matched, input }) {
   if (matched && matched.invite_link && isHttpsUrl(matched.invite_link)) return matched.invite_link;
   return security.safeRedirect(input.redirect) || REDIRECT_BY_TYPE[input.preview_type] || REDIRECT_URL || null;
