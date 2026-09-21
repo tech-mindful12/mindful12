@@ -22,6 +22,7 @@ Railway service for Mindful12: an embeddable intake form (stored in Postgres, fo
    | `ALLOWED_HOSTS` | Hosts allowed to embed the form / be redirect targets (default `mindful12.mycoursecreator360.com, mindful12.com, *.mindful12.com`) |
    | `REDIRECT_URL_INDEPENDENT`, `REDIRECT_URL_HR`, `REDIRECT_URL_EXECUTIVE`, `REDIRECT_URL_EMPLOYEE` | Where people with **no registered company** go after submitting, per preview type |
    | `REDIRECT_URL` | Generic fallback if the per-type one is blank. All redirect vars accept `{id}`, `{email}`, `{preview_type}`, `{company_id}` |
+   | `INVITE_LINK_INDEPENDENT`, `INVITE_LINK_HR`, `INVITE_LINK_EXECUTIVE`, `INVITE_LINK_EMPLOYEE` | Community invite link sent to GHL (`invite_link`) when no registered company overrides it. Independent + HR have built-in defaults |
    | `ADMIN_PASSWORD` | Password for the admin panel at `/admin` |
    | `ADMIN_API_KEY` | Optional — lets scripts hit the admin API with an `X-Admin-Key` header |
 
@@ -182,9 +183,14 @@ Seeded with Baystate Benefit Services (`baystatebenefits.com`) and Central Bosto
   "match_method": "selected", "match_confidence": 1,
   "email": "jane@baystatebenefits.com", "full_name": "Jane Doe", "first_name": "Jane", "last_name": "Doe",
   "phone": "(617) 555-1234", "city": "Braintree", "state": "MA",
-  "preview_type": "brochure", "page_url": "https://funnel.page/preview", "url_params": { "utm_source": "email" }
+  "preview_type": "employee", "under_review": false, "review_reason": null,
+  "invite_link": "https://login.mindful12.com/communities/groups/baystate-benefit-services/private-group?invite=abc",
+  "redirect_url": "https://login.mindful12.com/communities/groups/baystate-benefit-services/private-group?invite=abc",
+  "page_url": "https://funnel.page/preview", "url_params": { "utm_source": "email" }
 }
 ```
+
+**`invite_link`** is the community invite the contact should get, resolved in this order: the matched registered company's Invite Link → `INVITE_LINK_<PREVIEW_TYPE>` env var → built-in default (independent → `mindful-12` group, HR → `human-resource-preview-group`). Under-review sign-ups get it too (alongside `under_review: true`), so the GHL workflow decides whether to send it.
 
 ## Local development
 
