@@ -100,7 +100,9 @@ app.get('/email-previews/:file', (req, res) => {
   if (req.query.sample) {
     html = html
       .replace(/\{\{contact\.first_name\}\}/g, 'Jane')
-      .replace(/\{\{unsubscribe_link\}\}/g, '<a href="#" style="color:#647483;">Unsubscribe</a>');
+      .replace(/\{\{unsubscribe_link\}\}/g, '<a href="#" style="color:#647483;">Unsubscribe</a>')
+      // Button hrefs are GHL merge tags ({{contact.week_1_c}} etc). Keep the link clickable and show the tag on hover.
+      .replace(/href="(\{\{[^}]+\}\})"/g, (m, tag) => `href="#" title="${tag}"`);
   }
   res.setHeader('Cache-Control', 'no-cache');
   res.type('html').send(html);

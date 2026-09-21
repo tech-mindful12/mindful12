@@ -1,0 +1,14 @@
+key,email,button_text,placeholder,custom_value
+create_password,00-create-your-password,Create My Password,https://REPLACE-ME/create-password,{{contact.private_channel_link}}
+reset_breath,02-friday-reset-breath,Experience the Reset Breath,https://REPLACE-ME/reset-breath,{{custom_values.reset_breath}}
+setting_the_stage,03-monday-setting-the-stage,Setting the Stage,https://REPLACE-ME/setting-the-stage,{{custom_values.setting_the_stage}}
+setting_the_stage_exec,03b-monday-setting-the-stage-executive,Setting the Stage,https://REPLACE-ME/setting-the-stage-executive,{{custom_values.setting_the_stage_executive}}
+week1_challenge,04-week1-tuesday-challenge,Listen to Your First Challenge,https://REPLACE-ME/week-1-challenge,{{contact.week_1_c}}
+week1_follow_up,05-week1-thursday-follow-up,Listen to Your First Follow-up,https://REPLACE-ME/week-1-follow-up,{{contact.week_1_f1}}
+week1_follow_up_2,06-week1-friday-second-follow-up,Listen to Your Second Follow-up,https://REPLACE-ME/week-1-follow-up-2,{{contact.week_1_f2}}
+week2_challenge,07-week2-tuesday-challenge,Listen to Your Next Challenge,https://REPLACE-ME/week-2-challenge,{{contact.week_2_c}}
+week2_follow_up,08-week2-thursday-follow-up,Listen to Your Next Follow-up,https://REPLACE-ME/week-2-follow-up,{{contact.week_2_f}}
+next_challenge,09-weeks3-12-tuesday-challenge,Listen to Your Next Challenge,https://REPLACE-ME/next-challenge,{{contact.next_challenge}}
+next_follow_up,10-weeks3-12-thursday-follow-up,Listen to Your Next Follow-up,https://REPLACE-ME/next-follow-up,{{contact.next_followup}}
+hr_calendar,11-week-one-done-hr,Pick a Time,https://REPLACE-ME/book-a-call,{{custom_values.team_rollout_call}}
+independent_form,12-week-one-done-independent,Tell Us Who to Reach,https://REPLACE-ME/tell-us-your-company,{{custom_values.independent_outreach_form}}
