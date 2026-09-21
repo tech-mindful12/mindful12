@@ -20,7 +20,8 @@ Every button/link is a placeholder `https://REPLACE-ME/...` defined once in `LIN
 |---|---|---|
 | `https://REPLACE-ME/create-password` | 00 | Web-app signup URL (the "Create My Password" destination) |
 | `https://REPLACE-ME/reset-breath` | 02 | Friday Reset Breath experience |
-| `https://REPLACE-ME/setting-the-stage` | 03 | Monday Setting the Stage experience |
+| `https://REPLACE-ME/setting-the-stage` | 03 | Monday Setting the Stage page (general) |
+| `https://REPLACE-ME/setting-the-stage-executive` | 03b | Monday Setting the Stage page (executive edition) |
 | `https://REPLACE-ME/week-1-challenge` | 04 | Week 1 challenge |
 | `https://REPLACE-ME/week-1-follow-up` | 05 | Week 1 follow-up |
 | `https://REPLACE-ME/week-1-follow-up-2` | 06 | Week 1 second follow-up |
@@ -40,7 +41,8 @@ Every button/link is a placeholder `https://REPLACE-ME/...` defined once in `LIN
 | `01b-registration-complete-sent-fri-sun.html` | same | same | Sign-ups **Fri–Sun** ("Today" replaces "Friday") |
 | `01c-registration-complete-sent-mon-DRAFT.html` | same | same | Sign-ups **Mon** — copy still owed by Bob |
 | `02-friday-reset-breath.html` | *(proposed)* Your first experience with mindful awareness | Today, we introduce the foundation for everything that follows. | Friday before launch |
-| `03-monday-setting-the-stage.html` | Mindful 12 starts here | There's one simple idea behind everything you're about to experience. | Monday before launch |
+| `03-monday-setting-the-stage.html` | Mindful 12 starts here | There's one simple idea behind everything you're about to experience. | Monday before launch — HR / employee / independent |
+| `03b-monday-setting-the-stage-executive.html` | same | same | Monday before launch — **executives**. Same copy for now; only the button destination differs (`setting_the_stage_exec`) |
 | `04-week1-tuesday-challenge.html` | Your Mindfulness Challenge is ready | It takes about 5 minutes. | Week 1 Tue 7:00 AM ET |
 | `05-week1-thursday-follow-up.html` | Your Follow-up is ready | It takes about 5 minutes. | Week 1 Thu |
 | `06-week1-friday-second-follow-up.html` | Your second Follow-up is ready | It takes less than 5 minutes. | Week 1 Fri only |

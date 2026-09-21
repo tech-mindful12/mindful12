@@ -32,7 +32,8 @@ UNSUB = "{{unsubscribe_link}}"  # GHL's standard unsubscribe merge field
 LINKS = {
     "create_password":   "https://REPLACE-ME/create-password",     # web app signup (Create My Password email)
     "reset_breath":      "https://REPLACE-ME/reset-breath",         # Friday pre-launch
-    "setting_the_stage": "https://REPLACE-ME/setting-the-stage",    # Monday pre-launch
+    "setting_the_stage": "https://REPLACE-ME/setting-the-stage",    # Monday pre-launch (everyone but execs)
+    "setting_the_stage_exec": "https://REPLACE-ME/setting-the-stage-executive",  # Monday pre-launch, executive edition
     "week1_challenge":   "https://REPLACE-ME/week-1-challenge",
     "week1_follow_up":   "https://REPLACE-ME/week-1-follow-up",
     "week1_follow_up_2": "https://REPLACE-ME/week-1-follow-up-2",
@@ -252,7 +253,8 @@ def friday_reset_breath():
 # 3. Monday — Setting the Stage
 # =====================================================================
 
-def monday_setting_the_stage():
+def monday_setting_the_stage(link_key="setting_the_stage"):
+    """Same email for everyone for now; the executive version only differs by where the button goes."""
     rows = [
         logo_block(),
         body(f"Hi {FIRST},", pad_bottom=24),
@@ -263,7 +265,7 @@ def monday_setting_the_stage():
 
         p("Take one minute to experience what that means.", size=16, lh=24, weight="bold", color=BLACK, pad_bottom=28),
 
-        button("Setting the Stage →", LINKS["setting_the_stage"]),
+        button("Setting the Stage →", LINKS[link_key]),
         gap(40),
 
         p("Thank you,", size=14, lh=20, color=GRAY, pad_bottom=2),
@@ -495,6 +497,7 @@ FILES = {
     "01c-registration-complete-sent-mon-DRAFT.html": registration_email("mon"),
     "02-friday-reset-breath.html": friday_reset_breath(),
     "03-monday-setting-the-stage.html": monday_setting_the_stage(),
+    "03b-monday-setting-the-stage-executive.html": monday_setting_the_stage("setting_the_stage_exec"),
     "04-week1-tuesday-challenge.html": week1_tuesday(),
     "05-week1-thursday-follow-up.html": week1_thursday(),
     "06-week1-friday-second-follow-up.html": week1_friday(),
@@ -513,7 +516,8 @@ META = {
     "01b-registration-complete-sent-fri-sun.html": ("Your registration is complete. Here’s what’s next", "same", "Sign-ups Fri–Sun (“Today” replaces “Friday”)"),
     "01c-registration-complete-sent-mon-DRAFT.html": ("Your registration is complete. Here’s what’s next", "same", "Sign-ups Mon — DRAFT, copy still to confirm"),
     "02-friday-reset-breath.html": ("Your first experience with mindful awareness (proposed)", "Today, we introduce the foundation for everything that follows.", "Friday before launch"),
-    "03-monday-setting-the-stage.html": ("Mindful 12 starts here", "There’s one simple idea behind everything you’re about to experience.", "Monday before launch"),
+    "03-monday-setting-the-stage.html": ("Mindful 12 starts here", "There’s one simple idea behind everything you’re about to experience.", "Monday before launch — HR / employee / independent"),
+    "03b-monday-setting-the-stage-executive.html": ("Mindful 12 starts here", "There’s one simple idea behind everything you’re about to experience.", "Monday before launch — EXECUTIVES (same copy for now; button goes to the executive Setting the Stage)"),
     "04-week1-tuesday-challenge.html": ("Your Mindfulness Challenge is ready", "It takes about 5 minutes.", "Week 1 — Tuesday 7:00 AM ET"),
     "05-week1-thursday-follow-up.html": ("Your Follow-up is ready", "It takes about 5 minutes.", "Week 1 — Thursday 7:00 AM ET"),
     "06-week1-friday-second-follow-up.html": ("Your second Follow-up is ready", "It takes less than 5 minutes.", "Week 1 only — Friday 7:00 AM ET"),
