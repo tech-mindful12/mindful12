@@ -92,7 +92,7 @@ Two editions of the Monday "Setting the Stage" walkthrough (8 steps, same Contin
 - `https://YOUR-APP/setting-the-stage/executive` — `public/setting-the-stage-executive.html`, the PDF verbatim (8 steps)
 - `https://YOUR-APP/setting-the-stage` — `public/setting-the-stage.html`, the non-executive copy (7 steps: Setting the Stage, The First Practice, Tomorrow Morning, Notice the Moment, Mindful Awareness, One Breath, The Beginning)
 
-Embed with `data-page="stage"` or `data-page="stage-executive"`. `public/stage.js` keeps the "n / N" footer in sync and reports height to the embed.
+Embed with `data-page="stage"` or `data-page="stage-executive"`. With `data-page="stage"`, the host page URL picks the edition: `?audience=executive` or `?preview_type=executive` → executive, anything else → general — so one GHL page can serve both. `public/stage.js` keeps the "n / N" footer in sync and reports height to the embed.
 
 ## The Reset Breath page
 

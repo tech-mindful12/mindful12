@@ -73,9 +73,15 @@ const loginLimiter = security.rateLimit({ windowMs: 15 * 60 * 1000, max: 10, mes
 
 // Pretty URLs.
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'admin.html')));
-// Setting the Stage walkthrough: general and executive editions.
-app.get('/setting-the-stage', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'setting-the-stage.html')));
-app.get('/setting-the-stage/executive', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'setting-the-stage-executive.html')));
+// Setting the Stage walkthrough: general and executive editions. One embed can serve both:
+// ?audience=executive or ?preview_type=executive on the host page URL picks the executive edition.
+const STAGE_GENERAL = path.join(__dirname, '..', 'public', 'setting-the-stage.html');
+const STAGE_EXEC = path.join(__dirname, '..', 'public', 'setting-the-stage-executive.html');
+app.get('/setting-the-stage', (req, res) => {
+  const a = String(req.query.audience || req.query.preview_type || '').toLowerCase();
+  res.sendFile(a === 'executive' ? STAGE_EXEC : STAGE_GENERAL);
+});
+app.get('/setting-the-stage/executive', (req, res) => res.sendFile(STAGE_EXEC));
 // The Reset Breath: read-along practice + guided audio.
 app.get('/reset-breath', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'reset-breath.html')));
 // FAQ with the app tour and an "ask us directly" form.
