@@ -28,22 +28,13 @@ FONT = "Arial, Helvetica, sans-serif"
 FIRST = "{{contact.first_name}}"
 UNSUB = "{{unsubscribe_link}}"  # GHL's standard unsubscribe merge field
 
-# Every link the emails need. Each is a placeholder until mapped to a GHL custom value / trigger link.
-LINKS = {
-    "create_password":   "https://REPLACE-ME/create-password",     # web app signup (Create My Password email)
-    "reset_breath":      "https://REPLACE-ME/reset-breath",         # Friday pre-launch
-    "setting_the_stage": "https://REPLACE-ME/setting-the-stage",    # Monday pre-launch (everyone but execs)
-    "setting_the_stage_exec": "https://REPLACE-ME/setting-the-stage-executive",  # Monday pre-launch, executive edition
-    "week1_challenge":   "https://REPLACE-ME/week-1-challenge",
-    "week1_follow_up":   "https://REPLACE-ME/week-1-follow-up",
-    "week1_follow_up_2": "https://REPLACE-ME/week-1-follow-up-2",
-    "week2_challenge":   "https://REPLACE-ME/week-2-challenge",
-    "week2_follow_up":   "https://REPLACE-ME/week-2-follow-up",
-    "next_challenge":    "https://REPLACE-ME/next-challenge",       # weeks 3-12 (per-week value)
-    "next_follow_up":    "https://REPLACE-ME/next-follow-up",       # weeks 3-12 (per-week value)
-    "hr_calendar":       "https://REPLACE-ME/book-a-call",          # HR week-one-done: booking calendar
-    "independent_form":  "https://REPLACE-ME/tell-us-your-company", # Independent week-one-done: form
-}
+# Every link the emails need. links.csv is the source of truth (filled in by the client with GHL merge
+# fields / URLs); the placeholder column is the fallback while a row is still blank.
+import csv as _csv
+LINKS = {}
+with open(os.path.join(HERE, "links.csv"), encoding="utf-8", newline="") as _f:
+    for _row in _csv.DictReader(_f):
+        LINKS[_row["key"].strip()] = (_row.get("custom_value") or "").strip() or _row["placeholder"].strip()
 
 
 def esc(s):
