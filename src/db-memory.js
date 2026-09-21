@@ -22,7 +22,7 @@ async function migrate(seed) {
 
 const byName = (a, b) => a.name.localeCompare(b.name);
 const publicShape = ({ id, name, domain, website }) => ({ id, name, domain, website });
-const routingShape = ({ id, name, domain, website, invite_link, group_link }) => ({ id, name, domain, website, invite_link, group_link });
+const routingShape = ({ id, name, domain, website, invite_link, group_link, passcode }) => ({ id, name, domain, website, invite_link, group_link, passcode });
 
 async function listCompanies() {
   return companies.filter((c) => c.active).sort(byName).map(publicShape);

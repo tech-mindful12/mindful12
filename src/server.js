@@ -207,6 +207,7 @@ app.post('/api/submissions', submitLimiter, async (req, res, next) => {
     phone: str(b.phone, 40),
     city: str(b.city, 120),
     state: str(b.state, 2).toUpperCase(),
+    passcode: str(b.passcode, 200),
     preview_type: PREVIEW_TYPES.includes(str(b.preview_type, 120).toLowerCase()) ? str(b.preview_type, 120).toLowerCase() : DEFAULT_PREVIEW_TYPE,
     url_params: sanitizeParams(b.url_params),
     page_url: str(b.page_url, 2000) || null,
@@ -225,7 +226,7 @@ app.post('/api/submissions', submitLimiter, async (req, res, next) => {
 
   try {
     let matched = null, method = 'none', confidence = null;
-    let underReview = false, reviewReason = null;
+    let underReview = false, reviewReason = null, passcodeVerified = false;
 
     if (input.preview_type === 'hr') {
       input.company_name = HR_GROUP_NAME;          // everyone in the HR preview is filed together
@@ -247,11 +248,17 @@ app.post('/api/submissions', submitLimiter, async (req, res, next) => {
         confidence = result.best.score;
       }
 
-      // Employees are only added automatically when their email is on their company's domain.
-      if (input.preview_type === 'employee') {
-        const emailRoot = match.rootDomain(match.emailDomain(input.email));
-        if (!matched) { underReview = true; reviewReason = 'company_not_registered'; }
-        else if (emailRoot !== match.rootDomain(matched.domain)) { underReview = true; reviewReason = 'email_domain_mismatch'; }
+      // Employees + execs are only added automatically when their email is on their company's domain,
+      // or when they give the company's passcode. A wrong passcode is a 422 so a typo can be fixed
+      // (clearing the field submits for review instead).
+      const emailRoot = match.rootDomain(match.emailDomain(input.email));
+      if (input.preview_type === 'employee' && !matched) {
+        underReview = true; reviewReason = 'company_not_registered';
+      } else if (matched && emailRoot !== match.rootDomain(matched.domain)) {
+        if (input.passcode) {
+          if (matched.passcode && security.safeEqual(input.passcode.toLowerCase(), matched.passcode.trim().toLowerCase())) passcodeVerified = true;
+          else return res.status(422).json({ ok: false, errors: { passcode: 'That passcode didn’t match. Check it with your company, or clear it to submit for review.' } });
+        } else { underReview = true; reviewReason = 'email_domain_mismatch'; }
       }
     }
 
@@ -305,6 +312,7 @@ app.post('/api/submissions', submitLimiter, async (req, res, next) => {
       preview_type: input.preview_type,
       under_review: underReview,
       review_reason: reviewReason,
+      passcode_verified: passcodeVerified,
       invite_link: resolveInviteLink({ matched, input }),
       group_link: matched && matched.group_link ? matched.group_link : null,
       redirect_url: finalRedirect,

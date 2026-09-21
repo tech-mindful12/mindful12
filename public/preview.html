@@ -210,7 +210,12 @@
             <input id="email" name="email" type="email" required autocomplete="email" inputmode="email" placeholder="you@company.com">
             <div class="m12-hint" id="email-suggest" hidden></div>
           <div class="m12-notice" id="email-notice" hidden>
-          <strong>This doesn’t look like a company email.</strong> Employees are added automatically only with an email on their company’s domain. You can still submit, but your request will be reviewed — please get in touch with your HR team afterwards to make sure you’re added.
+          <strong>This doesn’t look like a company email.</strong> If your company gave you a passcode, enter it below to be added right away. Otherwise you can still submit, and your request will be reviewed before you’re added.
+          <div class="m12-field m12-passcode-field">
+            <label for="passcode">Company passcode <span class="m12-optional">(optional)</span></label>
+            <input id="passcode" name="passcode" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Passcode">
+            <div class="m12-error" data-for="passcode"></div>
+          </div>
         </div>
             <div class="m12-error" data-for="email"></div>
           </div>

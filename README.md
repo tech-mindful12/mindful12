@@ -82,7 +82,7 @@ The preview type sets the message above the form and whether Company Name is req
 
 Phone is optional for everyone (validated only if entered).
 
-**Employee domain check.** Employees are added automatically only when their email is on their (matched) company's domain. Otherwise the submission is stored with `under_review = true` (`review_reason` = `email_domain_mismatch` or `company_not_registered`), no redirect happens, the form shows "your request is under review — contact your HR team", and the GHL payload carries `under_review: true`. The form also warns live under the email field as soon as it can tell.
+**Domain check + passcode (employee & executive).** Employees and executives are added automatically only when their email is on their (matched) company's domain. If it isn't, the form reveals a **Company passcode** field: a passcode matching the company's `passcode` (admin panel) lets them through as normal (`passcode_verified: true` in the payload); a wrong one is a 422 on the field so a typo can be fixed; leaving it blank stores the submission with `under_review = true` (`review_reason` = `email_domain_mismatch`), no redirect, and the "your request is under review" card. Employees whose company isn't registered at all are under review too (`company_not_registered`); executives with an unregistered company go through as before. The GHL payload carries `under_review` either way.
 
 Messages and options live in `PREVIEW_TYPES` at the top of `public/form.js`; the server-side list is in `src/server.js`.
 
@@ -183,7 +183,7 @@ Seeded with Baystate Benefit Services (`baystatebenefits.com`) and Central Bosto
   "match_method": "selected", "match_confidence": 1,
   "email": "jane@baystatebenefits.com", "full_name": "Jane Doe", "first_name": "Jane", "last_name": "Doe",
   "phone": "(617) 555-1234", "city": "Braintree", "state": "MA",
-  "preview_type": "employee", "under_review": false, "review_reason": null,
+  "preview_type": "employee", "under_review": false, "review_reason": null, "passcode_verified": false,
   "invite_link": "https://login.mindful12.com/communities/groups/baystate-benefit-services/private-group?invite=abc",
   "group_link": "https://login.mindful12.com/communities/groups/baystate-benefit-services/home",
   "redirect_url": "https://login.mindful12.com/communities/groups/baystate-benefit-services/private-group?invite=abc",
