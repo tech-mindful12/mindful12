@@ -129,7 +129,7 @@ The chosen URL is stored on the submission (`redirect_url`) and included in the 
 
 ## Admin panel
 
-`https://YOUR-APP/admin` — password from `ADMIN_PASSWORD`. Edit registered companies inline (name, domain, website, **invite link**, passcode, tag, active), add new ones, delete. Sessions are signed tokens valid for 12 h; login is rate-limited (10 tries / 15 min per IP).
+`https://YOUR-APP/admin` — password from `ADMIN_PASSWORD`. Edit registered companies inline (name, domain, website, **invite link**, **group link**, passcode, tag, active), add new ones, delete. Sessions are signed tokens valid for 12 h; login is rate-limited (10 tries / 15 min per IP).
 
 Embed it on a page like `mindful12.com/admin` with:
 
@@ -152,7 +152,7 @@ Embed it on a page like `mindful12.com/admin` with:
 
 ## Database
 
-**`registered_companies`** — `id, name, domain, website, invite_link, passcode, tag, active, created_at, updated_at`
+**`registered_companies`** — `id, name, domain, website, invite_link, group_link, passcode, tag, active, created_at, updated_at`
 Seeded with Baystate Benefit Services (`baystatebenefits.com`) and Central Boston Elder Services (`centralboston.org`).
 
 **`form_submissions`** — every submission: `company_name` (as typed; null if left blank), `matched_company_id/name`, `match_method`, `match_confidence`, `email`, `email_domain`, `full_name`, `phone`, `city`, `state`, `preview_type`, `url_params` (jsonb), `page_url`, `redirect_url`, `ip`, `user_agent`, `ghl_webhook_status` (`sent` | `failed` | `skipped`), `ghl_webhook_response`, `created_at`.
@@ -185,12 +185,15 @@ Seeded with Baystate Benefit Services (`baystatebenefits.com`) and Central Bosto
   "phone": "(617) 555-1234", "city": "Braintree", "state": "MA",
   "preview_type": "employee", "under_review": false, "review_reason": null,
   "invite_link": "https://login.mindful12.com/communities/groups/baystate-benefit-services/private-group?invite=abc",
+  "group_link": "https://login.mindful12.com/communities/groups/baystate-benefit-services/home",
   "redirect_url": "https://login.mindful12.com/communities/groups/baystate-benefit-services/private-group?invite=abc",
   "page_url": "https://funnel.page/preview", "url_params": { "utm_source": "email" }
 }
 ```
 
 **`invite_link`** is the community invite the contact should get, resolved in this order: the matched registered company's Invite Link → `INVITE_LINK_<PREVIEW_TYPE>` env var → built-in default (independent → `mindful-12` group, HR → `human-resource-preview-group`). Under-review sign-ups get it too (alongside `under_review: true`), so the GHL workflow decides whether to send it.
+
+**`group_link`** is the matched registered company's Group Link from the admin panel (`null` if no match or not set).
 
 ## Local development
 
