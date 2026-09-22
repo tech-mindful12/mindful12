@@ -27,7 +27,9 @@ Railway service for Mindful12: an embeddable intake form (stored in Postgres, fo
    | `CHANNEL_LINK_HOSTS` | Hosts a private channel link may point at (default `mindful12.com, *.mindful12.com`) |
    | `GHL_CHANNEL_LINK_FIELD_ID` | Custom-field **id** holding the link (defaults to `ZVPibuKKScCRcqDQWFFL`, "Private Community Invite Link"). Blank it to look the id up by key instead |
    | `GHL_CHANNEL_LINK_FIELD` | Custom-field key, used only when the id above is blank (default `private_channel_link`) |
-   | `ADMIN_PASSWORD` | Password for the admin panel at `/admin` |   | `ADMIN_API_KEY` | Optional — lets scripts hit the admin API with an `X-Admin-Key` header |
+   | `INTRODUCTION_URL` | Fallback destination for the `/registered` page's "Read the introduction" button, when the embed doesn't pass one |
+   | `ADMIN_PASSWORD` | Password for the admin panel at `/admin` |
+   | `ADMIN_API_KEY` | Optional — lets scripts hit the admin API with an `X-Admin-Key` header |
 
 2. Deploy (push to `main`). On first boot the app creates the tables and seeds the two registered companies.
 3. Add a public domain to the service (Settings → Networking). That domain is `YOUR-APP` below.
@@ -97,6 +99,18 @@ Two editions of the Monday "Setting the Stage" walkthrough (8 steps, same Contin
 - `https://YOUR-APP/setting-the-stage` — `public/setting-the-stage.html`, the non-executive copy (7 steps: Setting the Stage, The First Practice, Tomorrow Morning, Notice the Moment, Mindful Awareness, One Breath, The Beginning)
 
 Embed with `data-page="stage"` or `data-page="stage-executive"`. With `data-page="stage"`, the host page URL picks the edition: `?audience=executive` or `?preview_type=executive` → executive, anything else → general — so one GHL page can serve both. `public/stage.js` keeps the "n / N" footer in sync and reports height to the embed.
+
+## Registered page
+
+`https://YOUR-APP/registered` — `public/registered.html`: the three-step walkthrough people land on after creating their password (You are registered → Before Tuesday → the companion-book introduction). Where the `01z` email's **What to expect** button goes.
+
+```html
+<div class="mindful12-form" data-page="registered"
+     data-introduction="{{custom_values.introduction}}"></div>
+<script src="https://YOUR-APP/embed.js"></script>
+```
+
+**The "Read the introduction" button.** GHL only fills custom values in on its own pages, never inside this iframe, so the funnel page passes the link down: `data-introduction="{{custom_values.introduction}}"` becomes `?introduction=…` on the iframe (that's `embed.js` turning any `data-*` into a param). Without it the page falls back to the `INTRODUCTION_URL` env var. With neither — or with an unfilled merge field, or a non-https link — the button stays hidden instead of going nowhere. Add `data-logo="off"` if the funnel page already shows the logo.
 
 ## The Reset Breath page
 

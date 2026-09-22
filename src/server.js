@@ -115,6 +115,17 @@ app.get('/reset-breath', (req, res) => res.sendFile(path.join(__dirname, '..', '
 // FAQ with the app tour and an "ask us directly" form.
 app.get('/faq', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'faq.html')));
 
+// Post-signup walkthrough. The "Read the introduction" button is a GHL custom value, which GHL can
+// only fill in on its own page — so the embed passes it as ?introduction=, and this is the fallback.
+const REGISTERED_PAGE = path.join(__dirname, '..', 'public', 'registered.html');
+const INTRODUCTION_URL = process.env.INTRODUCTION_URL || '';
+app.get('/registered', (req, res) => {
+  const html = fs.readFileSync(REGISTERED_PAGE, 'utf8')
+    .replace('window.M12_INTRODUCTION_URL = ""', `window.M12_INTRODUCTION_URL = ${JSON.stringify(INTRODUCTION_URL)}`);
+  res.setHeader('Cache-Control', 'no-cache');
+  res.type('html').send(html);
+});
+
 // Email previews for review: the gallery, the manifest, and each built email (with sample merge data when ?sample=1).
 const EMAILS_DIR = path.join(__dirname, '..', 'emails');
 app.get('/email-previews', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'email-previews.html')));
