@@ -161,51 +161,21 @@ def shell(title, preheader, rows):
 # 1. Registration complete — sent right after the password is created
 # =====================================================================
 
-def registration_email(variant):
-    """
-    variant: 'tue-thu' (base, matches the approved mock), 'fri-sun', 'mon'
-    Only the two day sections change.
-    """
-    if variant == "tue-thu":
-        arrives = "Your first challenge arrives Tuesday"
-        day1, day1_text = "Friday", "Your first experience with mindful awareness."
-        day2, day2_text = "Monday", "Discover what becomes possible when you begin to notice."
-    elif variant == "fri-sun":
-        arrives = "Your first challenge arrives Tuesday"
-        day1, day1_text = "Today", "You’ll also be receiving your first experience with mindful awareness."
-        day2, day2_text = "Monday", "Discover what becomes possible when you begin to notice."
-    else:  # mon — copy still to come from Bob; placeholder follows the doc's notes
-        arrives = "Your first challenge arrives tomorrow"
-        day1, day1_text = "Today", "You’ll also be receiving your first experience with mindful awareness."
-        day2, day2_text = "Tomorrow", "Discover what becomes possible when you begin to notice."
-
+def registration_confirmed():
+    """Replaces the old 01 / 01b / 01c day-variants: one short confirmation for everyone."""
     rows = [
         logo_block(),
         body(f"Hi {FIRST},", pad_bottom=28),
 
-        header("You are registered"),
-        body("Your password is set, and your place in the Mindful 12 Preview is confirmed.", pad_bottom=38),
+        header("Your place in the Mindful 12 Preview is confirmed.", pad_bottom=8),
+        body("See what’s ahead, as well as something you can explore today.", pad_bottom=32),
 
-        header(arrives),
-        body("Before then, two short emails will begin the experience.", italic=True, pad_bottom=38),
-
-        header(day1),
-        body(day1_text, pad_bottom=38),
-
-        header(day2),
-        body(day2_text, pad_bottom=38),
-
-        header("Each email is short. Each one matters."),
-        body("Together, they set the stage for everything that follows.", pad_bottom=38),
-
-        body("For now, you’re all set.", pad_bottom=38),
-
-        header("Welcome to Mindful 12.", pad_bottom=0),
-        gap(22),  # 50px below the closing line incl. card padding
+        button("What to expect", LINKS["new_registration"]),
+        gap(10),
     ]
     return shell(
         "Your registration is complete. Here’s what’s next",
-        "Your password is set, and your place in the Mindful 12 Preview is confirmed.",
+        "See what’s ahead, as well as something you can explore today.",
         rows,
     )
 
@@ -483,9 +453,7 @@ def create_password_email():
 
 FILES = {
     "00-create-your-password.html": create_password_email(),
-    "01-registration-complete.html": registration_email("tue-thu"),
-    "01b-registration-complete-sent-fri-sun.html": registration_email("fri-sun"),
-    "01c-registration-complete-sent-mon-DRAFT.html": registration_email("mon"),
+    "01z-registration-complete.html": registration_confirmed(),
     "02-friday-reset-breath.html": friday_reset_breath(),
     "03-monday-setting-the-stage.html": monday_setting_the_stage(),
     "03b-monday-setting-the-stage-executive.html": monday_setting_the_stage("setting_the_stage_exec"),
@@ -503,9 +471,7 @@ FILES = {
 # Shown on /email-previews (subject, preview text, when it sends). Keep in step with FILES.
 META = {
     "00-create-your-password.html": ("Create your Mindful 12 password (proposed)", "", "Right after the registration form. Opens the web app to set a password."),
-    "01-registration-complete.html": ("Your registration is complete. Here’s what’s next", "Your password is set, and your place in the Mindful 12 Preview is confirmed.", "After the password is created — sign-ups Tue–Thu"),
-    "01b-registration-complete-sent-fri-sun.html": ("Your registration is complete. Here’s what’s next", "same", "Sign-ups Fri–Sun (“Today” replaces “Friday”)"),
-    "01c-registration-complete-sent-mon-DRAFT.html": ("Your registration is complete. Here’s what’s next", "same", "Sign-ups Mon — DRAFT, copy still to confirm"),
+    "01z-registration-complete.html": ("Your registration is complete. Here’s what’s next", "See what’s ahead, as well as something you can explore today.", "After the password is created — every sign-up, any day"),
     "02-friday-reset-breath.html": ("Your first experience with mindful awareness (proposed)", "Today, we introduce the foundation for everything that follows.", "Friday before launch"),
     "03-monday-setting-the-stage.html": ("Mindful 12 starts here", "There’s one simple idea behind everything you’re about to experience.", "Monday before launch — HR / employee / independent"),
     "03b-monday-setting-the-stage-executive.html": ("Mindful 12 starts here", "There’s one simple idea behind everything you’re about to experience.", "Monday before launch — EXECUTIVES (same copy for now; button goes to the executive Setting the Stage)"),
