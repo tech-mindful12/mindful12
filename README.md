@@ -27,7 +27,8 @@ Railway service for Mindful12: an embeddable intake form (stored in Postgres, fo
    | `CHANNEL_LINK_HOSTS` | Hosts a private channel link may point at (default `mindful12.com, *.mindful12.com`) |
    | `GHL_CHANNEL_LINK_FIELD_ID` | Custom-field **id** holding the link (defaults to `ZVPibuKKScCRcqDQWFFL`, "Private Community Invite Link"). Blank it to look the id up by key instead |
    | `GHL_CHANNEL_LINK_FIELD` | Custom-field key, used only when the id above is blank (default `private_channel_link`) |
-   | `ADMIN_PASSWORD` | Password for the admin panel at `/admin` |   | `ADMIN_API_KEY` | Optional — lets scripts hit the admin API with an `X-Admin-Key` header |
+   | `ADMIN_PASSWORD` | Password for the admin panel at `/admin` |
+   | `ADMIN_API_KEY` | Optional — lets scripts hit the admin API with an `X-Admin-Key` header |
 
 2. Deploy (push to `main`). On first boot the app creates the tables and seeds the two registered companies.
 3. Add a public domain to the service (Settings → Networking). That domain is `YOUR-APP` below.
