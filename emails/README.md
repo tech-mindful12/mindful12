@@ -14,32 +14,31 @@ Only standard GHL fields are used: `{{contact.first_name}}` and `{{unsubscribe_l
 
 ## Links to map
 
-Every button/link is a placeholder `https://REPLACE-ME/...` defined once in `LINKS` at the top of `build.py`. Map each to a GHL custom value or trigger link, then rebuild (or find-and-replace in the HTML):
+`links.csv` in this folder is the source of truth: `build.py` reads it and drops each `custom_value` straight into the button's `href` (falling back to the `placeholder` column while a row is blank). Change a link there, rerun `python build.py`, done. Every field below has to exist in GHL before these send.
 
-| Placeholder | Used in | Needs |
-|---|---|---|
-| `https://REPLACE-ME/create-password` | 00 | Web-app signup URL (the "Create My Password" destination) |
-| `https://REPLACE-ME/reset-breath` | 02 | Friday Reset Breath experience |
-| `https://REPLACE-ME/setting-the-stage` | 03 | Monday Setting the Stage page (general) |
-| `https://REPLACE-ME/setting-the-stage-executive` | 03b | Monday Setting the Stage page (executive edition) |
-| `https://REPLACE-ME/week-1-challenge` | 04 | Week 1 challenge |
-| `https://REPLACE-ME/week-1-follow-up` | 05 | Week 1 follow-up |
-| `https://REPLACE-ME/week-1-follow-up-2` | 06 | Week 1 second follow-up |
-| `https://REPLACE-ME/week-2-challenge` | 07 | Week 2 challenge |
-| `https://REPLACE-ME/week-2-follow-up` | 08 | Week 2 follow-up |
-| `https://REPLACE-ME/next-challenge` | 09 | Weeks 3–12 challenge (value changes per week) |
-| `https://REPLACE-ME/next-follow-up` | 10 | Weeks 3–12 follow-up (value changes per week) |
-| `https://REPLACE-ME/book-a-call` | 11 | HR week-one-done: calendar booking link |
-| `https://REPLACE-ME/tell-us-your-company` | 12 | Independent week-one-done: "who should we contact" form |
+| Key | Button | Used in | Goes to |
+|---|---|---|---|
+| `create_password` | Create My Password | 00 | `{{contact.private_channel_link}}` |
+| `new_registration` | What to expect | 01z | `{{custom_values.new_registration}}` |
+| `reset_breath` | Experience the Reset Breath | 02 | `{{custom_values.reset_breath}}` |
+| `setting_the_stage` | Setting the Stage | 03 | `{{custom_values.setting_the_stage}}` |
+| `setting_the_stage_exec` | Setting the Stage | 03b | `{{custom_values.setting_the_stage_executive}}` |
+| `week1_challenge` | Listen to Your First Challenge | 04 | `{{contact.week_1_c}}` |
+| `week1_follow_up` | Listen to Your First Follow-up | 05 | `{{contact.week_1_f1}}` |
+| `week1_follow_up_2` | Listen to Your Second Follow-up | 06 | `{{contact.week_1_f2}}` |
+| `week2_challenge` | Listen to Your Next Challenge | 07 | `{{contact.week_2_c}}` |
+| `week2_follow_up` | Listen to Your Next Follow-up | 08 | `{{contact.week_2_f}}` |
+| `next_challenge` | Listen to Your Next Challenge | 09 | `{{contact.next_challenge}}` |
+| `next_follow_up` | Listen to Your Next Follow-up | 10 | `{{contact.next_followup}}` |
+| `hr_calendar` | Pick a Time | 11 | `{{custom_values.team_rollout_call}}` |
+| `independent_form` | Tell Us Who to Reach | 12 | `{{custom_values.independent_outreach_form}}` |
 
 ## Files
 
 | File | Subject | Preview text | When / who |
 |---|---|---|---|
 | `00-create-your-password.html` | *(not in the doc — proposed:)* Create your Mindful 12 password | — | Right after the registration form; opens the web app. Bob's layout (image1): 924 px card, quiet button |
-| `01-registration-complete.html` | Your registration is complete. Here's what's next | Your password is set, and your place in the Mindful 12 Preview is confirmed. | After the password is created — **sign-ups Tue–Thu** |
-| `01b-registration-complete-sent-fri-sun.html` | same | same | Sign-ups **Fri–Sun** ("Today" replaces "Friday") |
-| `01c-registration-complete-sent-mon-DRAFT.html` | same | same | Sign-ups **Mon** — copy still owed by Bob |
+| `01z-registration-complete.html` | Your registration is complete. Here’s what’s next | See what’s ahead, as well as something you can explore today. | After the password is created — every sign-up, any day. Replaced the old 01 / 01b / 01c day variants |
 | `02-friday-reset-breath.html` | *(proposed)* Your first experience with mindful awareness | Today, we introduce the foundation for everything that follows. | Friday before launch |
 | `03-monday-setting-the-stage.html` | Mindful 12 starts here | There's one simple idea behind everything you're about to experience. | Monday before launch — HR / employee / independent |
 | `03b-monday-setting-the-stage-executive.html` | same | same | Monday before launch — **executives**. Same copy for now; only the button destination differs (`setting_the_stage_exec`) |

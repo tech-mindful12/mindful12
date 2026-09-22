@@ -6,22 +6,10 @@
     "when": "Right after the registration form. Opens the web app to set a password."
   },
   {
-    "file": "01-registration-complete.html",
+    "file": "01z-registration-complete.html",
     "subject": "Your registration is complete. Here’s what’s next",
-    "preview": "Your password is set, and your place in the Mindful 12 Preview is confirmed.",
-    "when": "After the password is created — sign-ups Tue–Thu"
-  },
-  {
-    "file": "01b-registration-complete-sent-fri-sun.html",
-    "subject": "Your registration is complete. Here’s what’s next",
-    "preview": "same",
-    "when": "Sign-ups Fri–Sun (“Today” replaces “Friday”)"
-  },
-  {
-    "file": "01c-registration-complete-sent-mon-DRAFT.html",
-    "subject": "Your registration is complete. Here’s what’s next",
-    "preview": "same",
-    "when": "Sign-ups Mon — DRAFT, copy still to confirm"
+    "preview": "See what’s ahead, as well as something you can explore today.",
+    "when": "After the password is created — every sign-up, any day"
   },
   {
     "file": "02-friday-reset-breath.html",

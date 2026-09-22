@@ -1,5 +1,6 @@
 key,email,button_text,placeholder,custom_value
 create_password,00-create-your-password,Create My Password,https://REPLACE-ME/create-password,{{contact.private_channel_link}}
+new_registration,01z-registration-complete,What to expect,https://REPLACE-ME/what-to-expect,{{custom_values.new_registration}}
 reset_breath,02-friday-reset-breath,Experience the Reset Breath,https://REPLACE-ME/reset-breath,{{custom_values.reset_breath}}
 setting_the_stage,03-monday-setting-the-stage,Setting the Stage,https://REPLACE-ME/setting-the-stage,{{custom_values.setting_the_stage}}
 setting_the_stage_exec,03b-monday-setting-the-stage-executive,Setting the Stage,https://REPLACE-ME/setting-the-stage-executive,{{custom_values.setting_the_stage_executive}}
