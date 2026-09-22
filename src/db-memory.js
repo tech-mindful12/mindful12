@@ -71,6 +71,22 @@ async function insertSubmission(s) {
   return { id: row.id, created_at: row.created_at };
 }
 
+async function findSubmissionByToken(token) {
+  return submissions.find((s) => s.wait_token && s.wait_token === token) || null;
+}
+
+async function findPendingSubmissionByEmail(email) {
+  const e = String(email || '').toLowerCase();
+  return submissions.filter((s) => String(s.email || '').toLowerCase() === e).slice(-1)[0] || null;
+}
+
+async function setChannelLink(id, link) {
+  const row = submissions.find((s) => s.id === id);
+  if (!row) return null;
+  row.private_channel_link = link; row.channel_link_at = new Date();
+  return { id: row.id, private_channel_link: link };
+}
+
 async function updateWebhookStatus(id, status, response) {
   const row = submissions.find((s) => s.id === id);
   if (row) { row.ghl_webhook_status = status; row.ghl_webhook_response = response || null; }
@@ -102,5 +118,6 @@ module.exports = {
   pool, migrate,
   listCompanies, listCompaniesForRouting, listCompaniesAdmin, addCompany, updateCompany, deleteCompany,
   insertSubmission, updateWebhookStatus, listSubmissions,
+  findSubmissionByToken, findPendingSubmissionByEmail, setChannelLink,
   insertQuestion, updateQuestionWebhookStatus, listQuestions,
 };

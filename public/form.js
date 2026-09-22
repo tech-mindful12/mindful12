@@ -14,6 +14,7 @@
     previewType: $('preview_type'), submit: $('submit-btn'), formError: $('form-error'),
     success: $('m12-success'), successText: $('success-text'),
     redirect: $('m12-redirect'), redirectEmail: $('redirect-email'), redirectCount: $('redirect-count'), redirectNow: $('redirect-now'),
+    redirectCountLine: $('redirect-count-line'), redirectWait: $('redirect-wait'), redirectSlow: $('redirect-slow'),
     review: $('m12-review'), emailNotice: $('email-notice'), passcode: $('passcode'),
     companyField: $('company-field'), companyOptional: $('company-optional'), companyHelp: $('company-help'),
     context: $('m12-context'), contextText: $('context-text'), contextChange: $('context-change'),
@@ -488,12 +489,9 @@
     form.hidden = true;
     // Employee without a verified company email: not added automatically, no web-app redirect.
     if (body.under_review && els.review) { els.review.hidden = false; postHeight(); return; }
-    // The server picked the destination: the company's invite link, or the per-preview-type fallback.
-    var redirect = body.redirect_url;
-    if (redirect && /^https?:\/\//i.test(redirect)) {
-      if (els.redirect) return showRedirectNotice(redirect);
-      return go(redirect);
-    }
+    // Nobody moves until GHL has filled in this contact's private channel link. We wait for it
+    // (the card explains the next step meanwhile) and never fall back to another destination.
+    if (body.wait_token && els.redirect) return showRedirectNotice(body.wait_token);
     if (params.get('success')) els.successText.textContent = params.get('success');
     els.success.hidden = false;
     postHeight();
@@ -505,18 +503,47 @@
   }
 
   var REDIRECT_DELAY_S = 30;
+  var POLL_FAST_MS = 2000, POLL_SLOW_MS = 5000, POLL_SLOW_AFTER_MS = 30000, POLL_GIVE_UP_MS = 5 * 60 * 1000;
 
   /**
-   * The destination asks them to create a login (name, email, password). Explain that first so
-   * nobody closes the signup modal and misses the session; then send them on, or sooner if they click.
+   * Show the "one last step" card straight away — it explains the password step, which is worth
+   * reading while GHL fills in this contact's private channel link. Poll until that link exists,
+   * then count down and go. If it never arrives we say so; we never send them anywhere else.
    */
-  function showRedirectNotice(url) {
-    var seconds = REDIRECT_DELAY_S, done = false;
+  function showRedirectNotice(token) {
     els.redirectEmail.textContent = els.email.value.trim();
-    els.redirectCount.textContent = seconds;
     els.redirect.hidden = false;
     postHeight();
     if (window.parent !== window) window.parent.postMessage({ type: 'mindful12:scroll' }, '*');
+    waitForChannelLink(token, Date.now());
+  }
+
+  function waitForChannelLink(token, startedAt) {
+    fetch('/api/channel-link?token=' + encodeURIComponent(token), { headers: { Accept: 'application/json' } })
+      .then(function (r) { return r.json(); })
+      .catch(function () { return {}; })
+      .then(function (body) {
+        if (body && body.ready && body.url) return startCountdown(body.url);
+        var waited = Date.now() - startedAt;
+        if (waited >= POLL_GIVE_UP_MS) {
+          els.redirectWait.hidden = true;
+          els.redirectSlow.hidden = false;
+          postHeight();
+          return;
+        }
+        setTimeout(function () { waitForChannelLink(token, startedAt); }, waited < POLL_SLOW_AFTER_MS ? POLL_FAST_MS : POLL_SLOW_MS);
+      });
+  }
+
+  /** Link is ready: reveal the button and send them on, or sooner if they click. */
+  function startCountdown(url) {
+    var seconds = REDIRECT_DELAY_S, done = false;
+    els.redirectWait.hidden = true;
+    els.redirectSlow.hidden = true;
+    els.redirectNow.hidden = false;
+    els.redirectCountLine.hidden = false;
+    els.redirectCount.textContent = seconds;
+    postHeight();
 
     function leave() { if (done) return; done = true; clearInterval(timer); go(url); }
     els.redirectNow.addEventListener('click', leave);
