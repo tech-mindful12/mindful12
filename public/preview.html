@@ -159,6 +159,7 @@
 
       <!-- 7 — ends with the account form -->
       <section class="lp-step" data-step="7">
+        <div id="ready-intro">
         <h2 class="lp-h1">You’re Ready to Begin</h2>
         <hr class="lp-rule">
         <div class="lp-rows" data-rows="ready_rows">
@@ -172,6 +173,7 @@
           </div>
         </div>
         <hr class="lp-divider">
+        </div>
 
         <!-- Same form as index.html; form.js drives it by these ids -->
         <form id="m12-form" class="m12-card m12-card--inline" novalidate autocomplete="on">
@@ -277,8 +279,10 @@
           <p>Once your password is set, your private member community will open.</p>
           <p class="m12-redirect-strong">Then close that page and go to your inbox</p>
           <p>You’ll find an email explaining what’s ahead.</p>
-          <button type="button" class="m12-btn m12-btn--quiet" id="redirect-now"><span>Create Password</span></button>
-          <p class="m12-redirect-count">Opening automatically in <span id="redirect-count">30</span>s…</p>
+          <button type="button" class="m12-btn m12-btn--quiet" id="redirect-now" hidden><span>Create Password</span></button>
+          <p class="m12-redirect-count" id="redirect-count-line" hidden>Opening automatically in <span id="redirect-count">30</span>s…</p>
+          <p class="m12-redirect-wait" id="redirect-wait"><span class="m12-dot" aria-hidden="true"></span>Setting up your account — this takes a few seconds…</p>
+          <p class="m12-redirect-warn" id="redirect-slow" hidden>This is taking longer than usual. You can close this page — we’ve emailed your link, so check your inbox (and your spam folder).</p>
           <span id="redirect-email" hidden></span>
         </div>
 

@@ -77,6 +77,9 @@ async function migrate() {
       user_agent           TEXT,
       ghl_webhook_status   TEXT,                     -- sent | failed | skipped
       ghl_webhook_response TEXT,
+      wait_token           TEXT,                     -- unguessable handle the browser polls with
+      private_channel_link TEXT,                     -- {{contact.private_channel_link}}, once GHL has it
+      channel_link_at      TIMESTAMPTZ,              -- when it landed
       created_at           TIMESTAMPTZ NOT NULL DEFAULT now()
     );
     ALTER TABLE form_submissions ALTER COLUMN company_name DROP NOT NULL;
@@ -84,6 +87,10 @@ async function migrate() {
     ALTER TABLE form_submissions ALTER COLUMN phone DROP NOT NULL;
     ALTER TABLE form_submissions ADD COLUMN IF NOT EXISTS under_review BOOLEAN NOT NULL DEFAULT FALSE;
     ALTER TABLE form_submissions ADD COLUMN IF NOT EXISTS review_reason TEXT;
+    ALTER TABLE form_submissions ADD COLUMN IF NOT EXISTS wait_token TEXT;
+    ALTER TABLE form_submissions ADD COLUMN IF NOT EXISTS private_channel_link TEXT;
+    ALTER TABLE form_submissions ADD COLUMN IF NOT EXISTS channel_link_at TIMESTAMPTZ;
+    CREATE INDEX IF NOT EXISTS form_submissions_wait_token_idx ON form_submissions (wait_token);
     CREATE INDEX IF NOT EXISTS form_submissions_created_at_idx ON form_submissions (created_at DESC);
     CREATE INDEX IF NOT EXISTS form_submissions_email_idx ON form_submissions (lower(email));
     CREATE INDEX IF NOT EXISTS form_submissions_company_idx ON form_submissions (matched_company_id);
@@ -172,15 +179,46 @@ async function insertSubmission(s) {
     `INSERT INTO form_submissions
        (company_name, matched_company_id, matched_company_name, match_method, match_confidence,
         email, email_domain, full_name, phone, city, state, preview_type, url_params, page_url, redirect_url,
-        under_review, review_reason, ip, user_agent)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
+        under_review, review_reason, ip, user_agent, wait_token)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
      RETURNING id, created_at`,
     [s.company_name, s.matched_company_id, s.matched_company_name, s.match_method, s.match_confidence,
      s.email, s.email_domain, s.full_name, s.phone, s.city, s.state, s.preview_type,
      s.url_params ? JSON.stringify(s.url_params) : null, s.page_url, s.redirect_url,
-     Boolean(s.under_review), s.review_reason || null, s.ip, s.user_agent]
+     Boolean(s.under_review), s.review_reason || null, s.ip, s.user_agent, s.wait_token || null]
   );
   return rows[0];
+}
+
+/** Wait-token lookup: how the browser asks "is my private channel link ready yet?". */
+async function findSubmissionByToken(token) {
+  const { rows } = await pool.query(
+    `SELECT id, email, preview_type, under_review, private_channel_link, created_at
+       FROM form_submissions WHERE wait_token = $1 LIMIT 1`,
+    [token]
+  );
+  return rows[0] || null;
+}
+
+/** Newest signup for this email that is still waiting — what an inbound GHL post attaches to. */
+async function findPendingSubmissionByEmail(email) {
+  const { rows } = await pool.query(
+    `SELECT id, email, preview_type, under_review, private_channel_link, created_at
+       FROM form_submissions
+      WHERE lower(email) = lower($1) AND created_at > now() - interval '7 days'
+      ORDER BY created_at DESC LIMIT 1`,
+    [email]
+  );
+  return rows[0] || null;
+}
+
+async function setChannelLink(id, link) {
+  const { rows } = await pool.query(
+    `UPDATE form_submissions SET private_channel_link = $2, channel_link_at = now()
+      WHERE id = $1 RETURNING id, private_channel_link`,
+    [id, link]
+  );
+  return rows[0] || null;
 }
 
 async function updateWebhookStatus(id, status, response) {
@@ -225,5 +263,6 @@ module.exports = {
   pool, migrate,
   listCompanies, listCompaniesForRouting, listCompaniesAdmin, addCompany, updateCompany, deleteCompany,
   insertSubmission, updateWebhookStatus, listSubmissions,
+  findSubmissionByToken, findPendingSubmissionByEmail, setChannelLink,
   insertQuestion, updateQuestionWebhookStatus, listQuestions,
 };

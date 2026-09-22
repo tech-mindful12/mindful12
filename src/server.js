@@ -1,5 +1,6 @@
 'use strict';
 
+const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
 const express = require('express');
@@ -15,6 +16,16 @@ const GHL_WEBHOOK_URL = ghl.config.webhookUrl;
 // FAQ "ask us directly" questions go here; falls back to the main webhook (payload carries event: "faq_question").
 const GHL_QUESTION_WEBHOOK_URL = process.env.GHL_QUESTION_WEBHOOK_URL || GHL_WEBHOOK_URL;
 const ADMIN_API_KEY = process.env.ADMIN_API_KEY || '';
+
+// Nobody is sent to the community until GHL has filled in {{contact.private_channel_link}} for them.
+// It reaches us either way round: GHL posts it to /api/channel-link, or (when the API creds are set)
+// we read it off the contact while the browser waits. Links are host-checked so a leaked secret
+// can't turn this into an open redirect.
+const CHANNEL_LINK_SECRET = process.env.CHANNEL_LINK_SECRET || ADMIN_API_KEY;
+const CHANNEL_LINK_HOSTS = (process.env.CHANNEL_LINK_HOSTS || 'mindful12.com, *.mindful12.com')
+  .split(',').map((h) => h.trim().toLowerCase()).filter(Boolean);
+const CHANNEL_POLL_MIN_MS = 3000;          // don't hit the GHL API more often than this per signup
+const channelPollAt = new Map();           // submission id -> last GHL API call
 
 const STATE_CODES = new Set(locations.states.map((s) => s.code));
 
@@ -82,7 +93,9 @@ app.use('/api', (req, res, next) => {
   next();
 });
 
-app.use('/api', security.rateLimit({ windowMs: 60 * 1000, max: 120 }));
+const apiLimiter = security.rateLimit({ windowMs: 60 * 1000, max: 120 });
+// The channel-link poll is chatty by design and carries its own (larger) limit.
+app.use('/api', (req, res, next) => (req.path === '/channel-link' && req.method === 'GET' ? next() : apiLimiter(req, res, next)));
 const submitLimiter = security.rateLimit({ windowMs: 10 * 60 * 1000, max: 30, message: 'Too many submissions from this network. Please try again in a few minutes.' });
 const loginLimiter = security.rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: 'Too many sign-in attempts. Please wait 15 minutes.' });
 
@@ -177,6 +190,82 @@ app.get('/api/companies/lookup', lookupLimiter, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ---------- Private channel link: the browser waits here until GHL has one ----------
+
+/** https, and on a host we expect the community to live on. */
+function isChannelLink(url) {
+  let u;
+  try { u = new URL(String(url)); } catch (e) { return false; }
+  if (u.protocol !== 'https:') return false;
+  const host = u.hostname.toLowerCase();
+  return CHANNEL_LINK_HOSTS.some((h) => (h.startsWith('*.') ? host === h.slice(2) || host.endsWith(h.slice(1)) : host === h));
+}
+
+const channelPollLimiter = security.rateLimit({ windowMs: 10 * 60 * 1000, max: 600 });
+
+/**
+ * Polled by the form after submitting. Answers "not yet" until the link exists — it never hands
+ * back a fallback destination, so nobody is redirected without their own link.
+ */
+app.get('/api/channel-link', channelPollLimiter, async (req, res, next) => {
+  const token = String(req.query.token || '').trim();
+  res.setHeader('Cache-Control', 'no-store');
+  if (!token) return res.status(400).json({ ready: false, error: 'Missing token' });
+  try {
+    const sub = await db.findSubmissionByToken(token);
+    if (!sub) return res.status(404).json({ ready: false, error: 'Unknown token' });
+    if (sub.private_channel_link) return res.json({ ready: true, url: sub.private_channel_link });
+    if (sub.under_review) return res.json({ ready: false, under_review: true });
+
+    // Nothing pushed to us yet — ask GHL directly, if we have API credentials.
+    if (ghl.isApiConfigured()) {
+      const last = channelPollAt.get(sub.id) || 0;
+      if (Date.now() - last >= CHANNEL_POLL_MIN_MS) {
+        channelPollAt.set(sub.id, Date.now());
+        try {
+          const link = await ghl.getPrivateChannelLink(sub.email);
+          if (link && isChannelLink(link)) {
+            await db.setChannelLink(sub.id, link);
+            return res.json({ ready: true, url: link });
+          }
+          if (link) console.warn(`[channel-link] GHL returned a link on an unexpected host for #${sub.id}: ${link}`);
+        } catch (err) {
+          console.error('[channel-link] GHL lookup failed', err.message);
+        }
+      }
+    }
+    res.json({ ready: false });
+  } catch (err) { next(err); }
+});
+
+/**
+ * GHL pushes the link here the moment its workflow sets it (fastest path, and the only one when
+ * no API credentials are configured). Auth: X-Channel-Key / Bearer against CHANNEL_LINK_SECRET.
+ */
+app.post('/api/channel-link', async (req, res, next) => {
+  if (!CHANNEL_LINK_SECRET) {
+    console.error('[channel-link] inbound post rejected: CHANNEL_LINK_SECRET is not set');
+    return res.status(503).json({ ok: false, error: 'Channel link endpoint is not configured' });
+  }
+  const header = String(req.get('X-Channel-Key') || req.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim();
+  const supplied = header || String((req.body && req.body.secret) || '');
+  if (!security.safeEqual(supplied, CHANNEL_LINK_SECRET)) return res.status(401).json({ ok: false, error: 'Unauthorized' });
+
+  const b = req.body || {};
+  const link = String(b.private_channel_link || b.link || b.url || '').trim();
+  const token = String(b.wait_token || b.token || '').trim();
+  const email = String(b.email || '').trim();
+  if (!isChannelLink(link)) return res.status(422).json({ ok: false, error: 'private_channel_link must be an https link on an allowed host' });
+  if (!token && !email) return res.status(422).json({ ok: false, error: 'Send wait_token or email' });
+
+  try {
+    const sub = token ? await db.findSubmissionByToken(token) : await db.findPendingSubmissionByEmail(email);
+    if (!sub) return res.status(404).json({ ok: false, error: 'No matching signup' });
+    await db.setChannelLink(sub.id, link);
+    res.json({ ok: true, submission_id: sub.id });
+  } catch (err) { next(err); }
+});
+
 app.get('/api/locations/states', (req, res) => {
   res.setHeader('Cache-Control', 'public, max-age=86400');
   res.json(locations.states);
@@ -264,6 +353,8 @@ app.post('/api/submissions', submitLimiter, async (req, res, next) => {
 
     const redirectUrl = underReview ? null : resolveRedirect({ matched, input, id: null });
 
+    const waitToken = crypto.randomBytes(24).toString('hex');
+
     const row = await db.insertSubmission({
       ...input,
       company_name: input.company_name || null,
@@ -276,6 +367,7 @@ app.post('/api/submissions', submitLimiter, async (req, res, next) => {
       redirect_url: redirectUrl,
       under_review: underReview,
       review_reason: reviewReason,
+      wait_token: waitToken,
       ip: req.ip,
       user_agent: str(req.get('user-agent'), 500),
     });
@@ -291,6 +383,8 @@ app.post('/api/submissions', submitLimiter, async (req, res, next) => {
       match_method: method,
       redirect_url: finalRedirect,
       under_review: underReview,
+      // The form waits on this instead of redirecting: no private channel link, no redirect.
+      wait_token: underReview ? null : waitToken,
     });
 
     sendToGhl(row.id, {
@@ -313,6 +407,7 @@ app.post('/api/submissions', submitLimiter, async (req, res, next) => {
       under_review: underReview,
       review_reason: reviewReason,
       passcode_verified: passcodeVerified,
+      wait_token: waitToken,
       invite_link: resolveInviteLink({ matched, input }),
       group_link: matched && matched.group_link ? matched.group_link : null,
       redirect_url: finalRedirect,

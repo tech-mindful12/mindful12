@@ -23,8 +23,11 @@ Railway service for Mindful12: an embeddable intake form (stored in Postgres, fo
    | `REDIRECT_URL_INDEPENDENT`, `REDIRECT_URL_HR`, `REDIRECT_URL_EXECUTIVE`, `REDIRECT_URL_EMPLOYEE` | Where people with **no registered company** go after submitting, per preview type |
    | `REDIRECT_URL` | Generic fallback if the per-type one is blank. All redirect vars accept `{id}`, `{email}`, `{preview_type}`, `{company_id}` |
    | `INVITE_LINK_INDEPENDENT`, `INVITE_LINK_HR`, `INVITE_LINK_EXECUTIVE`, `INVITE_LINK_EMPLOYEE` | Community invite link sent to GHL (`invite_link`) when no registered company overrides it. Independent + HR have built-in defaults |
-   | `ADMIN_PASSWORD` | Password for the admin panel at `/admin` |
-   | `ADMIN_API_KEY` | Optional — lets scripts hit the admin API with an `X-Admin-Key` header |
+   | `CHANNEL_LINK_SECRET` | Secret GHL sends as `X-Channel-Key` when posting a contact's private channel link. Falls back to `ADMIN_API_KEY` |
+   | `CHANNEL_LINK_HOSTS` | Hosts a private channel link may point at (default `mindful12.com, *.mindful12.com`) |
+   | `GHL_CHANNEL_LINK_FIELD_ID` | Custom-field **id** holding the link (defaults to `ZVPibuKKScCRcqDQWFFL`, "Private Community Invite Link"). Blank it to look the id up by key instead |
+   | `GHL_CHANNEL_LINK_FIELD` | Custom-field key, used only when the id above is blank (default `private_channel_link`) |
+   | `ADMIN_PASSWORD` | Password for the admin panel at `/admin` |   | `ADMIN_API_KEY` | Optional — lets scripts hit the admin API with an `X-Admin-Key` header |
 
 2. Deploy (push to `main`). On first boot the app creates the tables and seeds the two registered companies.
 3. Add a public domain to the service (Settings → Networking). That domain is `YOUR-APP` below.
@@ -115,17 +118,26 @@ Embed with `data-page="stage"` or `data-page="stage-executive"`. With `data-page
 4. **Submit gate** — if a suggestion is pending, submit is blocked until they choose Yes or No.
 5. **Server is the final authority** — on submit the server re-runs the matcher and records `matched_company_id`, `match_method` (`selected` | `name` | `domain` | `none`) and `match_confidence`, so borderline cases can be reviewed later.
 
-## After submit: where people go
+## After submit: waiting for the private channel link
 
-Decided server-side, in this order:
+**Nobody is redirected until GHL has filled in that contact's `{{contact.private_channel_link}}`, and there is no fallback destination.** That link is personal (it opens their password/community signup), so sending them anywhere else would be wrong.
 
-1. **Matched a registered company with an Invite Link** → that link (e.g. `https://login.mindful12.com/communities/groups/baystate-benefit-services/private-group?invite=invite`).
-2. `?redirect=` on the embed URL, if it points at an allowed host.
-3. `REDIRECT_URL_<PREVIEW_TYPE>` — e.g. `REDIRECT_URL_INDEPENDENT`, `REDIRECT_URL_HR`.
-4. `REDIRECT_URL`.
-5. Nothing configured → built-in thank-you card.
+What the visitor sees: the "One Last Step" card appears immediately with a spinner ("Setting up your account…"). The form polls `GET /api/channel-link?token=…` every 2 s (every 5 s after the first 30 s). As soon as the link exists the Create Password button appears and the familiar 30 s countdown starts, then the whole page (not just the iframe) goes to that link. After 5 minutes with no link the card says to check their inbox instead — it never redirects without one.
 
-The chosen URL is stored on the submission (`redirect_url`) and included in the GHL webhook payload. The whole page (not just the iframe) is redirected.
+The link reaches the app either way round; set up one or both:
+
+1. **GHL pushes it (fastest, works without API credentials).** In the workflow, right after the step that sets the contact's Private Channel Link, add a **Webhook** action:
+   - `POST https://YOUR-APP/api/channel-link`
+   - Header `X-Channel-Key: <CHANNEL_LINK_SECRET>`
+   - Body `{"email": "{{contact.email}}", "private_channel_link": "{{contact.private_channel_link}}"}`
+   `wait_token` (sent in our submission webhook) can be used instead of `email` if the workflow has it stored.
+2. **The app reads it off the contact.** With `GHL_LOCATION_ID` + `GHL_PIT_TOKEN` set, each poll (at most once every 3 s per signup) looks the contact up by email and reads custom field `ZVPibuKKScCRcqDQWFFL` — "Private Community Invite Link" / `contact.private_channel_link` (`GHL_CHANNEL_LINK_FIELD_ID` overrides it; blank that to look the id up by key instead). The token needs `contacts.readonly`.
+
+Links are only accepted over https on a host in `CHANNEL_LINK_HOSTS` (default `mindful12.com, *.mindful12.com`), so a leaked secret can't turn this into an open redirect.
+
+Under-review signups don't wait for anything — they get the review card as before.
+
+**`redirect_url` still exists** (matched company's Invite Link → `?redirect=` → `REDIRECT_URL_<PREVIEW_TYPE>` → `REDIRECT_URL`). It's recorded on the submission and sent in the webhook payload so GHL knows which community this person belongs to, but the browser no longer uses it.
 
 ## Admin panel
 
@@ -155,7 +167,7 @@ Embed it on a page like `mindful12.com/admin` with:
 **`registered_companies`** — `id, name, domain, website, invite_link, group_link, passcode, tag, active, created_at, updated_at`
 Seeded with Baystate Benefit Services (`baystatebenefits.com`) and Central Boston Elder Services (`centralboston.org`).
 
-**`form_submissions`** — every submission: `company_name` (as typed; null if left blank), `matched_company_id/name`, `match_method`, `match_confidence`, `email`, `email_domain`, `full_name`, `phone`, `city`, `state`, `preview_type`, `url_params` (jsonb), `page_url`, `redirect_url`, `ip`, `user_agent`, `ghl_webhook_status` (`sent` | `failed` | `skipped`), `ghl_webhook_response`, `created_at`.
+**`form_submissions`** — every submission: `wait_token`, `private_channel_link`, `channel_link_at`, `company_name` (as typed; null if left blank), `matched_company_id/name`, `match_method`, `match_confidence`, `email`, `email_domain`, `full_name`, `phone`, `city`, `state`, `preview_type`, `url_params` (jsonb), `page_url`, `redirect_url`, `ip`, `user_agent`, `ghl_webhook_status` (`sent` | `failed` | `skipped`), `ghl_webhook_response`, `created_at`.
 
 ## API
 
@@ -167,6 +179,8 @@ Seeded with Baystate Benefit Services (`baystatebenefits.com`) and Central Bosto
 | `GET` | `/api/locations/cities?state=MA` | Cities for a state |
 | `POST` | `/api/submissions` | Store submission + fire GHL webhook; returns `id`, `matched_company`, `redirect_url` |
 | `POST` | `/api/questions` | Store an FAQ question + fire GHL webhook (`event: faq_question`) |
+| `GET` | `/api/channel-link?token=` | Has this signup's private channel link arrived yet? `{ready, url}` |
+| `POST` | `/api/channel-link` | GHL posts `{email \| wait_token, private_channel_link}` with `X-Channel-Key` |
 | `GET` | `/api/admin/questions` | List FAQ questions — session or `X-Admin-Key` |
 | `POST` | `/api/admin/login` | `{password}` → `{token}` (12 h) |
 | `GET/POST` | `/api/admin/companies` | List / add — `Authorization: Bearer <token>` or `X-Admin-Key` |
@@ -184,6 +198,7 @@ Seeded with Baystate Benefit Services (`baystatebenefits.com`) and Central Bosto
   "email": "jane@baystatebenefits.com", "full_name": "Jane Doe", "first_name": "Jane", "last_name": "Doe",
   "phone": "(617) 555-1234", "city": "Braintree", "state": "MA",
   "preview_type": "employee", "under_review": false, "review_reason": null, "passcode_verified": false,
+  "wait_token": "9f3c…",
   "invite_link": "https://login.mindful12.com/communities/groups/baystate-benefit-services/private-group?invite=abc",
   "group_link": "https://login.mindful12.com/communities/groups/baystate-benefit-services/home",
   "redirect_url": "https://login.mindful12.com/communities/groups/baystate-benefit-services/private-group?invite=abc",
@@ -194,6 +209,8 @@ Seeded with Baystate Benefit Services (`baystatebenefits.com`) and Central Bosto
 **`invite_link`** is the community invite the contact should get, resolved in this order: the matched registered company's Invite Link → `INVITE_LINK_<PREVIEW_TYPE>` env var → built-in default (independent → `mindful-12` group, HR → `human-resource-preview-group`). Under-review sign-ups get it too (alongside `under_review: true`), so the GHL workflow decides whether to send it.
 
 **`group_link`** is the matched registered company's Group Link from the admin panel (`null` if no match or not set).
+
+**`wait_token`** is the handle the browser polls with while it waits for the private channel link; a GHL workflow can post it back instead of the email.
 
 ## Local development
 
