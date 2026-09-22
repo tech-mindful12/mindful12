@@ -49,10 +49,16 @@ async function api(method, endpoint, body) {
  * responses do carry fieldKey/key, so those are honoured too.
  */
 const CHANNEL_FIELD_KEY = (process.env.GHL_CHANNEL_LINK_FIELD || 'private_channel_link').replace(/^contact\./, '');
+// "Private Community Invite Link" (contact.private_channel_link) on the Mindful12 location.
+// Set GHL_CHANNEL_LINK_FIELD_ID to override; blank it to look the id up by key instead.
+const CHANNEL_FIELD_ID = process.env.GHL_CHANNEL_LINK_FIELD_ID !== undefined
+  ? process.env.GHL_CHANNEL_LINK_FIELD_ID.trim()
+  : 'ZVPibuKKScCRcqDQWFFL';
 const FIELD_CACHE_MS = 10 * 60 * 1000;
 let fieldCache = { id: null, at: 0 };
 
 async function channelFieldId() {
+  if (CHANNEL_FIELD_ID) return CHANNEL_FIELD_ID;
   if (fieldCache.id && Date.now() - fieldCache.at < FIELD_CACHE_MS) return fieldCache.id;
   const data = await api('GET', `/locations/${config.locationId}/customFields`);
   const fields = (data && (data.customFields || data.customField)) || [];

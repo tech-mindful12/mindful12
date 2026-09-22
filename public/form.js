@@ -15,7 +15,7 @@
     success: $('m12-success'), successText: $('success-text'),
     redirect: $('m12-redirect'), redirectEmail: $('redirect-email'), redirectCount: $('redirect-count'), redirectNow: $('redirect-now'),
     redirectCountLine: $('redirect-count-line'), redirectWait: $('redirect-wait'), redirectSlow: $('redirect-slow'),
-    review: $('m12-review'), emailNotice: $('email-notice'), passcode: $('passcode'),
+    review: $('m12-review'), emailNotice: $('email-notice'), passcode: $('passcode'), readyIntro: $('ready-intro'),
     companyField: $('company-field'), companyOptional: $('company-optional'), companyHelp: $('company-help'),
     context: $('m12-context'), contextText: $('context-text'), contextChange: $('context-change'),
     chooser: $('context-chooser'), options: $('context-options'), confirm: $('context-confirm'), cancel: $('context-cancel'),
@@ -487,6 +487,9 @@
       window.parent.postMessage({ type: 'mindful12:submitted', id: body.id, matched_company: body.matched_company, under_review: body.under_review }, '*');
     }
     form.hidden = true;
+    // On the walkthrough the form sits under "You're Ready to Begin" — that intro is part of the
+    // form, so it goes away with it and the outcome card stands alone.
+    if (els.readyIntro) els.readyIntro.hidden = true;
     // Employee without a verified company email: not added automatically, no web-app redirect.
     if (body.under_review && els.review) { els.review.hidden = false; postHeight(); return; }
     // Nobody moves until GHL has filled in this contact's private channel link. We wait for it

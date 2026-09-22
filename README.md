@@ -25,7 +25,8 @@ Railway service for Mindful12: an embeddable intake form (stored in Postgres, fo
    | `INVITE_LINK_INDEPENDENT`, `INVITE_LINK_HR`, `INVITE_LINK_EXECUTIVE`, `INVITE_LINK_EMPLOYEE` | Community invite link sent to GHL (`invite_link`) when no registered company overrides it. Independent + HR have built-in defaults |
    | `CHANNEL_LINK_SECRET` | Secret GHL sends as `X-Channel-Key` when posting a contact's private channel link. Falls back to `ADMIN_API_KEY` |
    | `CHANNEL_LINK_HOSTS` | Hosts a private channel link may point at (default `mindful12.com, *.mindful12.com`) |
-   | `GHL_CHANNEL_LINK_FIELD` | Custom-field key holding the link (default `private_channel_link`) |
+   | `GHL_CHANNEL_LINK_FIELD_ID` | Custom-field **id** holding the link (defaults to `ZVPibuKKScCRcqDQWFFL`, "Private Community Invite Link"). Blank it to look the id up by key instead |
+   | `GHL_CHANNEL_LINK_FIELD` | Custom-field key, used only when the id above is blank (default `private_channel_link`) |
    | `ADMIN_PASSWORD` | Password for the admin panel at `/admin` |   | `ADMIN_API_KEY` | Optional — lets scripts hit the admin API with an `X-Admin-Key` header |
 
 2. Deploy (push to `main`). On first boot the app creates the tables and seeds the two registered companies.
@@ -130,7 +131,7 @@ The link reaches the app either way round; set up one or both:
    - Header `X-Channel-Key: <CHANNEL_LINK_SECRET>`
    - Body `{"email": "{{contact.email}}", "private_channel_link": "{{contact.private_channel_link}}"}`
    `wait_token` (sent in our submission webhook) can be used instead of `email` if the workflow has it stored.
-2. **The app reads it off the contact.** With `GHL_LOCATION_ID` + `GHL_PIT_TOKEN` set, each poll (at most once every 3 s per signup) looks the contact up by email and reads the custom field `contact.private_channel_link` (override the key with `GHL_CHANNEL_LINK_FIELD`). The token needs `contacts.readonly` and custom-field read access.
+2. **The app reads it off the contact.** With `GHL_LOCATION_ID` + `GHL_PIT_TOKEN` set, each poll (at most once every 3 s per signup) looks the contact up by email and reads custom field `ZVPibuKKScCRcqDQWFFL` — "Private Community Invite Link" / `contact.private_channel_link` (`GHL_CHANNEL_LINK_FIELD_ID` overrides it; blank that to look the id up by key instead). The token needs `contacts.readonly`.
 
 Links are only accepted over https on a host in `CHANNEL_LINK_HOSTS` (default `mindful12.com, *.mindful12.com`), so a leaked secret can't turn this into an open redirect.
 
