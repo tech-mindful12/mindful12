@@ -74,7 +74,7 @@
 .lp-list li { display: flex; align-items: center; gap: 10px; }
 .lp-list li i { color: var(--m12-accent); font-size: 18px; flex: none; }
 
-.lp-cta { display: flex; align-items: center; gap: 18px; margin-top: 26px; }
+.lp-cta { display: flex; align-items: center; flex-wrap: wrap; gap: 18px; margin-top: 26px; }
 .lp-cta--form { margin-top: 14px; justify-content: flex-start; }
 .lp-btn {
   display: inline-flex; align-items: center; gap: 10px;
@@ -82,6 +82,7 @@
   background: var(--m12-accent); border: 0; border-radius: var(--m12-radius);
   padding: 13px 24px 13px 28px; cursor: pointer; transition: background .15s;
 }
+.lp-btn { text-decoration: none; }   /* the Read the introduction CTA is a link, not a button */
 .lp-btn .lp-arrow { flex: none; transition: transform .15s; }
 .lp-btn:hover .lp-arrow { transform: translateX(3px); }
 .lp-btn:hover { background: var(--m12-accent-hover); }
@@ -95,28 +96,6 @@
 .lp-back:hover { background: var(--m12-accent-hover); }
 .lp-back .lp-arrow { flex: none; transition: transform .15s; }
 .lp-back:hover .lp-arrow { transform: translateX(-3px); }
-
-/* Registered page: sans headlines in accent blue, logo, footer nav */
-.lp-h1--sans { font-family: inherit; font-weight: 700; font-size: min(var(--lp-h1), 56px); letter-spacing: -0.02em; line-height: 1.15; }
-.lp-logo { display: block; width: 150px; height: auto; margin: 0 auto 40px; }
-.lp-eyebrow.lp-eyebrow--plain { font-size: 18px; font-weight: 600; letter-spacing: 0; text-transform: none; margin-bottom: 14px; }
-.lp-day-label.lp-day-label--accent { color: var(--m12-accent); font-size: 26px; margin-bottom: 4px; }
-.m12--registered .lp-days { gap: 34px; }
-.lp-btn--block {
-  display: flex; justify-content: center; width: 100%; max-width: 420px;
-  margin-top: 28px; padding: 16px 24px; text-decoration: none;
-}
-.lp-foot {
-  display: flex; align-items: center; justify-content: space-between; gap: 16px;
-  margin: 44px 0 0; font-size: 15px; font-weight: 500; color: var(--m12-muted);
-}
-.lp-foot-next {
-  display: inline-flex; align-items: center; gap: 10px;
-  font: inherit; font-size: 18px; font-weight: 600; color: var(--m12-accent);
-  background: none; border: 0; padding: 0; cursor: pointer;
-}
-.lp-foot-next .lp-arrow { flex: none; transition: transform .15s; }
-.lp-foot-next:hover .lp-arrow { transform: translateX(3px); }
 
 /* Setting the Stage page */
 .lp-eyebrow { margin: 0 0 10px; font-size: 14px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--m12-accent); }
@@ -146,8 +125,6 @@ body.bg-wave .m12-card--inline, body.bg-transparent .m12-card--inline { box-shad
 }
 @media (max-width: 480px) {
   :root { --lp-h1: 38px; }
-  .lp-logo { width: 130px; margin-bottom: 32px; }
-  .lp-day-label.lp-day-label--accent { font-size: 22px; }
   .m12--flow { padding: 24px 16px 40px; }
   .lp-item { gap: 14px; }
 }

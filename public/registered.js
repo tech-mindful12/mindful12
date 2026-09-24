@@ -31,10 +31,4 @@
     if (!v || v.indexOf('{{') === 0) return '';
     try { return new URL(v).protocol === 'https:' ? v : ''; } catch (e) { return ''; }
   }
-
-  // The logo is ours; the funnel page may already show one. data-logo="off" hides it.
-  if (new URLSearchParams(window.location.search).get('logo') === 'off') {
-    var logo = document.getElementById('page-logo');
-    if (logo) logo.hidden = true;
-  }
 })();
