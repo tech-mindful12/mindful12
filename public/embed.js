@@ -9,7 +9,8 @@
  * data-page="stage" / "stage-executive" load the Setting the Stage walkthrough;
  * data-page="reset-breath" loads The Reset Breath page with its audio player;
  * data-page="faq" loads the FAQ (app tour video, questions, ask-us form);
- * data-page="registered" loads the post-signup walkthrough (pass data-introduction="{{custom_values.introduction}}"). Any other data-* attribute becomes a URL parameter on the form
+ * data-page="registered" loads the post-signup walkthrough (pass data-introduction="{{custom_values.introduction}}").
+ * data-page="home" loads the homepage — the only page with a navbar. Any other data-* attribute becomes a URL parameter on the form
  * (data-preview-type -> preview_type, data-bg -> bg, data-redirect -> redirect, ...).
  * Query parameters on the funnel page URL (?preview_type=..., ?email=..., utm_*) are forwarded too,
  * and win over data-* attributes, so one page can serve several preview types via its link.
@@ -24,7 +25,7 @@
     if (container.getAttribute('data-mounted')) return;
     container.setAttribute('data-mounted', '1');
 
-    var pages = { preview: '/preview.html', admin: '/admin', stage: '/setting-the-stage', 'stage-executive': '/setting-the-stage/executive', 'reset-breath': '/reset-breath', faq: '/faq', registered: '/registered' };
+    var pages = { preview: '/preview.html', admin: '/admin', stage: '/setting-the-stage', 'stage-executive': '/setting-the-stage/executive', 'reset-breath': '/reset-breath', faq: '/faq', registered: '/registered', home: '/home.html' };
     var page = pages[container.getAttribute('data-page')] || '/';
     var params = new URLSearchParams();
     Array.prototype.forEach.call(container.attributes, function (a) {
