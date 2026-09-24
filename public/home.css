@@ -1,0 +1,110 @@
+/*
+ * Homepage (home.html). The only page with a navbar — every other page and funnel stays bare
+ * so it can be dropped into a GHL page that already has its own header.
+ * Builds on styles.css for the brand tokens.
+ */
+
+:root { --hp-serif: 'Playfair Display', Georgia, 'Times New Roman', serif; }
+
+body.hp { background: #fff; }
+.hp main { display: block; }
+
+/* ---------- Nav ---------- */
+.hp-nav { position: relative; z-index: 3; background: transparent; }
+.hp-nav-inner {
+  max-width: 1280px; margin: 0 auto; padding: 20px 32px;
+  display: flex; align-items: center; justify-content: space-between; gap: 24px;
+}
+.hp-logo {
+  font-size: 26px; font-weight: 700; letter-spacing: -0.02em;
+  color: var(--m12-text); text-decoration: none; white-space: nowrap;
+}
+.hp-logo span { color: var(--m12-accent); }
+.hp-menu { display: flex; align-items: center; gap: 22px; }
+.hp-menu a {
+  font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--m12-text); text-decoration: none; white-space: nowrap;
+}
+.hp-menu a:hover { color: var(--m12-accent); }
+
+.hp-burger { display: none; background: none; border: 0; padding: 8px; cursor: pointer; }
+.hp-burger span { display: block; width: 24px; height: 2px; margin: 5px 0; background: var(--m12-text); border-radius: 2px; }
+
+/* ---------- Shared bits ---------- */
+.hp-h1 {
+  font-family: var(--hp-serif); font-weight: 700; line-height: 1.12;
+  font-size: clamp(42px, 6.4vw, 76px); letter-spacing: -0.01em;
+  margin: 0; color: var(--m12-text);
+}
+.hp-h2 {
+  font-family: var(--hp-serif); font-weight: 600; line-height: 1.2;
+  font-size: clamp(28px, 3.6vw, 44px); margin: 0; color: var(--m12-text);
+}
+.hp-h2--caps { text-transform: uppercase; letter-spacing: .06em; font-size: clamp(26px, 3.2vw, 40px); }
+.hp-h2 em { font-style: italic; font-weight: 500; }
+.hp-accent { color: var(--m12-accent); }
+.hp-rule {
+  border: 0; height: 3px; width: 130px; margin: 26px auto 0;
+  background: var(--m12-accent); border-radius: var(--m12-radius);
+}
+.hp-lede { margin: 28px 0 0; font-size: 17px; line-height: 1.6; color: var(--m12-text); }
+.hp-body { margin: 26px 0 0; font-size: 16px; line-height: 1.65; color: var(--m12-text); }
+.hp-body--left { text-align: left; margin-top: 0; }
+.hp-body--left + .hp-body--left { margin-top: 22px; }
+
+/* ---------- Hero + the wave band ---------- */
+.hp-hero, .hp-band { background: #F4F6FC url('assets/bg.jpg') center / cover no-repeat; text-align: center; }
+.hp-hero {
+  margin-top: -84px; padding: 150px 24px 130px;   /* the nav floats over the wave */
+}
+.hp-band { margin: 40px 0; padding: 86px 24px 94px; }
+.hp-band .hp-rule { margin: 0 auto 26px; }
+.hp-band .hp-h2 { line-height: 1.25; }
+
+/* ---------- Sections ---------- */
+.hp-section { max-width: 1060px; margin: 0 auto; padding: 96px 32px 76px; text-align: center; }
+
+/* ---------- "How did you hear about Mindful12?" ---------- */
+.hp-paths { list-style: none; margin: 58px 0 0; padding: 0; text-align: left; }
+.hp-paths li + li { border-top: 1px solid var(--m12-border); }
+.hp-paths a {
+  display: flex; align-items: center; justify-content: space-between; gap: 24px;
+  padding: 26px 4px; text-decoration: none; color: var(--m12-text);
+}
+.hp-paths a:hover { background: rgba(45, 103, 255, .04); }
+.hp-path-copy { display: flex; flex-direction: column; gap: 8px; }
+.hp-path-title { font-size: 20px; font-weight: 700; color: var(--m12-accent); }
+.hp-path-text { font-size: 16px; line-height: 1.5; }
+.hp-path-arrow { flex: none; color: var(--m12-accent); transition: transform .15s; }
+.hp-paths a:hover .hp-path-arrow { transform: translateX(4px); }
+
+/* ---------- Philosophy ---------- */
+.hp-cols {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 26px 56px;
+  max-width: 800px; margin: 54px auto 0;
+}
+
+/* ---------- Footer ---------- */
+.hp-footer { padding: 26px 24px 40px; text-align: center; }
+.hp-footer p { margin: 0; font-size: 13px; color: var(--m12-muted); }
+.hp-footer a { color: var(--m12-muted); }
+
+@media (max-width: 900px) {
+  .hp-nav-inner { padding: 16px 20px; }
+  .hp-burger { display: block; }
+  .hp-menu {
+    display: none;
+    position: absolute; top: 100%; left: 0; right: 0;
+    flex-direction: column; align-items: flex-start; gap: 0;
+    background: #fff; border-top: 1px solid var(--m12-border);
+    box-shadow: 0 12px 24px rgba(13, 33, 88, .08);
+    padding: 8px 20px 16px;
+  }
+  .hp-nav.is-open .hp-menu { display: flex; }
+  .hp-menu a { padding: 12px 0; font-size: 13px; }
+  .hp-hero { margin-top: -70px; padding: 120px 20px 96px; }
+  .hp-section { padding: 68px 20px 52px; }
+  .hp-band { padding: 64px 20px 70px; }
+  .hp-cols { grid-template-columns: 1fr; gap: 22px; max-width: 480px; }
+  .hp-paths { margin-top: 40px; }
+}
