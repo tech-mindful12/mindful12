@@ -10,28 +10,29 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/home.css">
+  <!-- Embedded in a GHL page, so links have to leave the iframe rather than load inside it. -->
+  <base target="_top">
 </head>
 <!--
   Every outbound link on this page lives in the markup below, nowhere else.
-  Confirmed by Bob: About Us, HR Portal, Privacy Policy.
-  Still guesses (slug pattern only) — correct them here: the four preview funnels,
-  The Reset Breath and Contact.
+  They all point at mindful12.com, which fronts these pages; the four previews are one
+  funnel that reads ?preview_type=. Contact is a mailto: to support@mindful12.com.
 -->
 <body class="hp">
   <header class="hp-nav">
     <div class="hp-nav-inner">
-      <a class="hp-logo" href="/home.html">Mindful<span>12</span></a>
+      <a class="hp-logo" href="https://mindful12.com/">Mindful<span>12</span></a>
       <button class="hp-burger" type="button" id="hp-burger" aria-expanded="false" aria-controls="hp-menu" aria-label="Menu">
         <span></span><span></span><span></span>
       </button>
       <nav class="hp-menu" id="hp-menu" aria-label="Main">
         <a href="https://mindful12.com/about-us">About Us</a>
-        <a href="https://mindful12.com/executive-preview">Executive Preview</a>
-        <a href="https://mindful12.com/employee-preview">Employee Preview</a>
-        <a href="https://mindful12.com/hr-preview">HR Preview</a>
+        <a href="https://mindful12.com/preview-signup?preview_type=executive">Executive Preview</a>
+        <a href="https://mindful12.com/preview-signup?preview_type=employee">Employee Preview</a>
+        <a href="https://mindful12.com/preview-signup?preview_type=hr">HR Preview</a>
         <a href="https://mindful12.com/hr-portal-login">HR Portal</a>
-        <a href="https://mindful12.com/the-reset-breath">The Reset Breath</a>
-        <a href="https://mindful12.com/contact">Contact</a>
+        <a href="https://mindful12.com/reset-breath">The Reset Breath</a>
+        <a href="mailto:support@mindful12.com">Contact</a>
       </nav>
     </div>
   </header>
@@ -48,7 +49,7 @@
       <hr class="hp-rule">
       <ul class="hp-paths">
         <li>
-          <a href="https://mindful12.com/executive-preview">
+          <a href="https://mindful12.com/preview-signup?preview_type=executive">
             <span class="hp-path-copy">
               <span class="hp-path-title">Executive Preview</span>
               <span class="hp-path-text">Your company is considering Mindful12</span>
@@ -57,7 +58,7 @@
           </a>
         </li>
         <li>
-          <a href="https://mindful12.com/employee-preview">
+          <a href="https://mindful12.com/preview-signup?preview_type=employee">
             <span class="hp-path-copy">
               <span class="hp-path-title">Employee Preview</span>
               <span class="hp-path-text">Your company invited you to preview Mindful12</span>
@@ -66,7 +67,7 @@
           </a>
         </li>
         <li>
-          <a href="https://mindful12.com/hr-preview">
+          <a href="https://mindful12.com/preview-signup?preview_type=hr">
             <span class="hp-path-copy">
               <span class="hp-path-title">HR Preview</span>
               <span class="hp-path-text">See how Mindful12 could support your people.</span>
@@ -75,7 +76,7 @@
           </a>
         </li>
         <li>
-          <a href="https://mindful12.com/independent-preview">
+          <a href="https://mindful12.com/preview-signup?preview_type=independent">
             <span class="hp-path-copy">
               <span class="hp-path-title">Independent</span>
               <span class="hp-path-text">You’re exploring Mindful12 on your own.</span>
