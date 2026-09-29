@@ -53,7 +53,6 @@ const REDIRECT_BY_TYPE = Object.fromEntries(
  *   1. the matched registered company's invite_link
  *   2. INVITE_LINK_<PREVIEW_TYPE> env var
  *   3. the built-in default below (independent + HR groups)
- * Under-review sign-ups get the same link as everyone else; GHL decides what to do with it.
  */
 const DEFAULT_INVITE_LINKS = {
   independent: 'https://login.mindful12.com/communities/groups/mindful-12/home?invite=6ab193a3df56a636ece3cba3',
@@ -326,7 +325,7 @@ app.post('/api/submissions', submitLimiter, async (req, res, next) => {
 
   try {
     let matched = null, method = 'none', confidence = null;
-    let underReview = false, reviewReason = null, passcodeVerified = false;
+    let passcodeVerified = false;
 
     if (input.preview_type === 'hr') {
       input.company_name = HR_GROUP_NAME;          // everyone in the HR preview is filed together
@@ -348,21 +347,22 @@ app.post('/api/submissions', submitLimiter, async (req, res, next) => {
         confidence = result.best.score;
       }
 
-      // Employees + execs are only added automatically when their email is on their company's domain,
-      // or when they give the company's passcode. A wrong passcode is a 422 so a typo can be fixed
-      // (clearing the field submits for review instead).
+      // Nobody is stored "for review". An employee has to name a registered company, and anyone
+      // whose email isn't on that company's domain has to give the company's passcode. Missing or
+      // wrong is a 422 on the field, and that's the end of it. (A company with no passcode set can't
+      // let anyone off-domain in until HR adds one in the admin panel.)
       const emailRoot = match.rootDomain(match.emailDomain(input.email));
       if (input.preview_type === 'employee' && !matched) {
-        underReview = true; reviewReason = 'company_not_registered';
+        return res.status(422).json({ ok: false, errors: { company_name: 'We couldn’t find that company. Check the spelling, or ask your HR team how it’s registered.' } });
       } else if (matched && emailRoot !== match.rootDomain(matched.domain)) {
-        if (input.passcode) {
-          if (matched.passcode && security.safeEqual(input.passcode.toLowerCase(), matched.passcode.trim().toLowerCase())) passcodeVerified = true;
-          else return res.status(422).json({ ok: false, errors: { passcode: 'That passcode didn’t match. Check it with your company, or clear it to submit for review.' } });
-        } else { underReview = true; reviewReason = 'email_domain_mismatch'; }
+        if (!input.passcode) return res.status(422).json({ ok: false, errors: { passcode: 'Enter your company’s passcode to continue. Need the passcode? Ask your HR team.' } });
+        const valid = !!matched.passcode && security.safeEqual(input.passcode.toLowerCase(), matched.passcode.trim().toLowerCase());
+        if (!valid) return res.status(422).json({ ok: false, errors: { passcode: 'That passcode didn’t match. Check it with your HR team and try again.' } });
+        passcodeVerified = true;
       }
     }
 
-    const redirectUrl = underReview ? null : resolveRedirect({ matched, input, id: null });
+    const redirectUrl = resolveRedirect({ matched, input, id: null });
 
     const waitToken = crypto.randomBytes(24).toString('hex');
 
@@ -376,8 +376,8 @@ app.post('/api/submissions', submitLimiter, async (req, res, next) => {
       match_confidence: confidence,
       email_domain: match.emailDomain(input.email),
       redirect_url: redirectUrl,
-      under_review: underReview,
-      review_reason: reviewReason,
+      under_review: false,   // the review path is gone; column kept for old rows
+      review_reason: null,
       wait_token: waitToken,
       ip: req.ip,
       user_agent: str(req.get('user-agent'), 500),
@@ -393,9 +393,8 @@ app.post('/api/submissions', submitLimiter, async (req, res, next) => {
       matched_company: matched ? { id: matched.id, name: matched.name } : null,
       match_method: method,
       redirect_url: finalRedirect,
-      under_review: underReview,
       // The form waits on this instead of redirecting: no private channel link, no redirect.
-      wait_token: underReview ? null : waitToken,
+      wait_token: waitToken,
     });
 
     sendToGhl(row.id, {
@@ -415,8 +414,8 @@ app.post('/api/submissions', submitLimiter, async (req, res, next) => {
       city: input.city,
       state: input.state,
       preview_type: input.preview_type,
-      under_review: underReview,
-      review_reason: reviewReason,
+      under_review: false,   // always false now; kept so existing GHL workflow conditions don't break
+      review_reason: null,
       passcode_verified: passcodeVerified,
       wait_token: waitToken,
       invite_link: resolveInviteLink({ matched, input }),

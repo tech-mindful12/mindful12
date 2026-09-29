@@ -41,7 +41,7 @@ async function migrate() {
       website     TEXT,
       invite_link TEXT,                              -- where this company's people land after submitting
       group_link  TEXT,                              -- the company's community group (sent to GHL as group_link)
-      passcode    TEXT,                              -- lets employees/execs off the company domain through without review
+      passcode    TEXT,                              -- lets employees/execs off the company domain through
       tag         TEXT,                              -- free-text label for the admin's own grouping
       active      BOOLEAN NOT NULL DEFAULT TRUE,
       created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -71,8 +71,8 @@ async function migrate() {
       url_params           JSONB,                    -- every query param on the embed URL
       page_url             TEXT,                     -- parent funnel page, when known
       redirect_url         TEXT,                     -- where we sent them after submitting
-      under_review         BOOLEAN NOT NULL DEFAULT FALSE, -- employee whose email isn't on their company's domain
-      review_reason        TEXT,                     -- company_not_registered | email_domain_mismatch
+      under_review         BOOLEAN NOT NULL DEFAULT FALSE, -- legacy: always false since the review path was removed
+      review_reason        TEXT,                     -- legacy: always null
       ip                   TEXT,
       user_agent           TEXT,
       ghl_webhook_status   TEXT,                     -- sent | failed | skipped
