@@ -15,6 +15,7 @@
     success: $('m12-success'), successText: $('success-text'),
     redirect: $('m12-redirect'), redirectEmail: $('redirect-email'), redirectCount: $('redirect-count'), redirectNow: $('redirect-now'),
     redirectCountLine: $('redirect-count-line'), redirectWait: $('redirect-wait'), redirectSlow: $('redirect-slow'),
+    progress: $('redirect-progress'), progressFill: $('redirect-progress-fill'), progressLabel: $('redirect-progress-label'),
     review: $('m12-review'), emailNotice: $('email-notice'), passcode: $('passcode'), readyIntro: $('ready-intro'),
     companyField: $('company-field'), companyOptional: $('company-optional'), companyHelp: $('company-help'),
     context: $('m12-context'), contextText: $('context-text'), contextChange: $('context-change'),
@@ -509,6 +510,42 @@
   var POLL_FAST_MS = 2000, POLL_SLOW_MS = 5000, POLL_SLOW_AFTER_MS = 30000, POLL_GIVE_UP_MS = 5 * 60 * 1000;
 
   /**
+   * The wait is on GHL, so we can't know a real percentage. The bar eases towards 92% over the
+   * time this normally takes and stops there — it only reaches 100% when the link actually lands,
+   * so a full bar always means done. Labels say which part of the setup we're in.
+   */
+  var PROGRESS_STAGES = [
+    { after: 0, text: 'Creating your account…' },
+    { after: 4000, text: 'Setting up your community access…' },
+    { after: 12000, text: 'Almost there…' },
+    { after: 30000, text: 'Still working — hang tight…' },
+  ];
+  var PROGRESS_EASE_MS = 14000, PROGRESS_CEILING = 92, PROGRESS_TICK_MS = 400;
+  var progressTimer = null;
+
+  function setProgress(pct, text) {
+    if (!els.progressFill) return;
+    els.progressFill.style.width = pct + '%';
+    if (els.progress) els.progress.setAttribute('aria-valuenow', Math.round(pct));
+    if (text && els.progressLabel && els.progressLabel.textContent !== text) els.progressLabel.textContent = text;
+  }
+
+  function startProgress(startedAt) {
+    if (!els.progressFill) return;
+    function tick() {
+      var elapsed = Date.now() - startedAt;
+      var pct = PROGRESS_CEILING * (1 - Math.exp(-elapsed / PROGRESS_EASE_MS));
+      var stage = PROGRESS_STAGES[0];
+      for (var i = 0; i < PROGRESS_STAGES.length; i++) if (elapsed >= PROGRESS_STAGES[i].after) stage = PROGRESS_STAGES[i];
+      setProgress(pct, stage.text);
+    }
+    tick();
+    progressTimer = setInterval(tick, PROGRESS_TICK_MS);
+  }
+
+  function stopProgress() { clearInterval(progressTimer); progressTimer = null; }
+
+  /**
    * Show the "one last step" card straight away — it explains the password step, which is worth
    * reading while GHL fills in this contact's private channel link. Poll until that link exists,
    * then count down and go. If it never arrives we say so; we never send them anywhere else.
@@ -518,7 +555,9 @@
     els.redirect.hidden = false;
     postHeight();
     if (window.parent !== window) window.parent.postMessage({ type: 'mindful12:scroll' }, '*');
-    waitForChannelLink(token, Date.now());
+    var startedAt = Date.now();
+    startProgress(startedAt);
+    waitForChannelLink(token, startedAt);
   }
 
   function waitForChannelLink(token, startedAt) {
@@ -526,9 +565,10 @@
       .then(function (r) { return r.json(); })
       .catch(function () { return {}; })
       .then(function (body) {
-        if (body && body.ready && body.url) return startCountdown(body.url);
+        if (body && body.ready && body.url) return finishProgress(body.url);
         var waited = Date.now() - startedAt;
         if (waited >= POLL_GIVE_UP_MS) {
+          stopProgress();
           els.redirectWait.hidden = true;
           els.redirectSlow.hidden = false;
           postHeight();
@@ -536,6 +576,13 @@
         }
         setTimeout(function () { waitForChannelLink(token, startedAt); }, waited < POLL_SLOW_AFTER_MS ? POLL_FAST_MS : POLL_SLOW_MS);
       });
+  }
+
+  /** Link landed: run the bar to 100% so the full bar reads as "done", then hand over. */
+  function finishProgress(url) {
+    stopProgress();
+    setProgress(100, 'Your account is ready');
+    setTimeout(function () { startCountdown(url); }, 600);
   }
 
   /** Link is ready: reveal the button and send them on, or sooner if they click. */
