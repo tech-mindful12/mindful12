@@ -34,8 +34,9 @@
       lines: [
         'Your first challenge arrives Tuesday.',
         'We’ve sent you an email with the steps between now and then — it’s in your inbox whenever you’re ready.',
+        'While you’re here, say hello in the community and see what others are saying.',
       ],
-      cta: 'Take a look around',
+      cta: 'Say hello',
       optOut: 'Don’t show this again',
       // Stop showing it this many days after the person first saw it, so nobody in week three
       // is still being told their first challenge arrives Tuesday.
