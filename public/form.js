@@ -515,7 +515,7 @@
   var POLL_FAST_MS = 2000, POLL_SLOW_MS = 5000, POLL_SLOW_AFTER_MS = 30000, POLL_GIVE_UP_MS = 5 * 60 * 1000;
 
   /**
-   * The wait is on GHL, so we can't know a real percentage. The bar eases towards 92% over the
+   * The wait is on GHL, so we can't know a real percentage. The bar eases towards 80% over the
    * time this normally takes and stops there — it only reaches 100% when the link actually lands,
    * so a full bar always means done. Labels say which part of the setup we're in.
    */
@@ -525,7 +525,7 @@
     { after: 12000, text: 'Almost there…' },
     { after: 30000, text: 'Still working — hang tight…' },
   ];
-  var PROGRESS_EASE_MS = 14000, PROGRESS_CEILING = 92, PROGRESS_TICK_MS = 400;
+  var PROGRESS_EASE_MS = 14000, PROGRESS_CEILING = 80, PROGRESS_TICK_MS = 400;
   var progressTimer = null;
 
   function setProgress(pct, text) {
