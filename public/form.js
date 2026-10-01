@@ -16,6 +16,7 @@
     redirect: $('m12-redirect'), redirectEmail: $('redirect-email'), redirectCount: $('redirect-count'), redirectNow: $('redirect-now'),
     redirectCountLine: $('redirect-count-line'), redirectWait: $('redirect-wait'), redirectSlow: $('redirect-slow'),
     progress: $('redirect-progress'), progressFill: $('redirect-progress-fill'), progressLabel: $('redirect-progress-label'),
+    redirectStatus: $('redirect-status'),
     emailNotice: $('email-notice'), passcode: $('passcode'), readyIntro: $('ready-intro'),
     companyField: $('company-field'), companyOptional: $('company-optional'), companyHelp: $('company-help'),
     context: $('m12-context'), contextText: $('context-text'), contextChange: $('context-change'),
@@ -519,7 +520,7 @@
    * so a full bar always means done. Labels say which part of the setup we're in.
    */
   var PROGRESS_STAGES = [
-    { after: 0, text: 'Creating your account…' },
+    { after: 0, text: 'This usually takes a few seconds…' },
     { after: 4000, text: 'Setting up your community access…' },
     { after: 12000, text: 'Almost there…' },
     { after: 30000, text: 'Still working — hang tight…' },
@@ -586,6 +587,8 @@
   function finishProgress(url) {
     stopProgress();
     setProgress(100, 'Your account is ready');
+    // The line above the button has been saying "please wait" — don't leave it there once it's done.
+    if (els.redirectStatus) els.redirectStatus.textContent = 'Your account is ready';
     setTimeout(function () { startCountdown(url); }, 600);
   }
 
