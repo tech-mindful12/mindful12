@@ -87,7 +87,7 @@ The preview type sets the message above the form and whether Company Name is req
 
 Phone is optional for everyone (validated only if entered).
 
-**Domain check + passcode (employee & executive).** Employees and executives are added automatically only when their email is on their (matched) company's domain. If it isn't, the form reveals a **Company passcode** field: a passcode matching the company's `passcode` (admin panel) lets them through as normal (`passcode_verified: true` in the payload); a wrong one is a 422 on the field so a typo can be fixed; leaving it blank stores the submission with `under_review = true` (`review_reason` = `email_domain_mismatch`), no redirect, and the "your request is under review" card. Employees whose company isn't registered at all are under review too (`company_not_registered`); executives with an unregistered company go through as before. The GHL payload carries `under_review` either way.
+**Domain check + passcode gate (employee & executive).** Employees and executives go through only when their email is on their (matched) company's domain **or** they enter the company's passcode. Off the domain, the form reveals the **Company passcode** field ("Using a personal email? Enter your company's passcode to continue. Need the passcode? Ask your HR team.") and submit is blocked until it's filled: the browser refuses to send without it, and the server answers 422 on the field when it's missing or wrong (so a typo can be fixed). A match sets `passcode_verified: true` in the payload. A company with no `passcode` set (admin panel) can't admit anyone off-domain until HR adds one. An employee whose company isn't registered at all gets a 422 on the Company field instead. **Nothing is ever stored "under review"**: the `under_review` / `review_reason` columns and payload fields still exist (always `false` / `null`) so old rows and existing GHL workflow conditions keep working.
 
 Messages and options live in `PREVIEW_TYPES` at the top of `public/form.js`; the server-side list is in `src/server.js`.
 
@@ -149,8 +149,6 @@ The link reaches the app either way round; set up one or both:
 
 Links are only accepted over https on a host in `CHANNEL_LINK_HOSTS` (default `mindful12.com, *.mindful12.com`), so a leaked secret can't turn this into an open redirect.
 
-Under-review signups don't wait for anything — they get the review card as before.
-
 **`redirect_url` still exists** (matched company's Invite Link → `?redirect=` → `REDIRECT_URL_<PREVIEW_TYPE>` → `REDIRECT_URL`). It's recorded on the submission and sent in the webhook payload so GHL knows which community this person belongs to, but the browser no longer uses it.
 
 ## Admin panel
@@ -163,8 +161,6 @@ Embed it on a page like `mindful12.com/admin` with:
 <div class="mindful12-form" data-page="admin"></div>
 <script src="https://YOUR-APP/embed.js"></script>
 ```
-
-`passcode` is stored and editable but not used by the form yet.
 
 ## Security notes
 
@@ -220,7 +216,7 @@ Seeded with Baystate Benefit Services (`baystatebenefits.com`) and Central Bosto
 }
 ```
 
-**`invite_link`** is the community invite the contact should get, resolved in this order: the matched registered company's Invite Link → `INVITE_LINK_<PREVIEW_TYPE>` env var → built-in default (independent → `mindful-12` group, HR → `human-resource-preview-group`). Under-review sign-ups get it too (alongside `under_review: true`), so the GHL workflow decides whether to send it.
+**`invite_link`** is the community invite the contact should get, resolved in this order: the matched registered company's Invite Link → `INVITE_LINK_<PREVIEW_TYPE>` env var → built-in default (independent → `mindful-12` group, HR → `human-resource-preview-group`). 
 
 **`group_link`** is the matched registered company's Group Link from the admin panel (`null` if no match or not set).
 

@@ -212,9 +212,9 @@
             <input id="email" name="email" type="email" required autocomplete="email" inputmode="email" placeholder="you@company.com">
             <div class="m12-hint" id="email-suggest" hidden></div>
           <div class="m12-notice" id="email-notice" hidden>
-          <strong>This doesn’t look like a company email.</strong> If your company gave you a passcode, enter it below to be added right away. Otherwise you can still submit, and your request will be reviewed before you’re added.
+          <strong>Using a personal email?</strong> Enter your company’s passcode to continue. Need the passcode? Ask your HR team.
           <div class="m12-field m12-passcode-field">
-            <label for="passcode">Company passcode <span class="m12-optional">(optional)</span></label>
+            <label for="passcode">Company passcode</label>
             <input id="passcode" name="passcode" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Passcode">
             <div class="m12-error" data-for="passcode"></div>
           </div>
@@ -277,7 +277,7 @@
           <h2 class="m12-redirect-title">One Last Step</h2>
           <p class="m12-redirect-sub">Create your password</p>
           <p>Once your password is set, your private member community will open.</p>
-          <p class="m12-redirect-strong">Then close that page and go to your inbox</p>
+          <p class="m12-redirect-strong">Close this page and go to your inbox</p>
           <p>You’ll find an email explaining what’s ahead.</p>
           <button type="button" class="m12-btn m12-btn--quiet" id="redirect-now" hidden><span>Create Password</span></button>
           <p class="m12-redirect-count" id="redirect-count-line" hidden>Opening automatically in <span id="redirect-count">30</span>s…</p>
@@ -289,15 +289,6 @@
           </div>
           <p class="m12-redirect-warn" id="redirect-slow" hidden>This is taking longer than usual. You can close this page — we’ve emailed your link, so check your inbox (and your spam folder).</p>
           <span id="redirect-email" hidden></span>
-        </div>
-
-        <div class="m12-card m12-card--inline m12-review" id="m12-review" hidden>
-          <div class="m12-redirect-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2.5 2.5"/></svg>
-          </div>
-          <h2>Thanks — your request is under review</h2>
-          <p>Because your email isn’t on your company’s domain, we can’t add you automatically.</p>
-          <p class="m12-redirect-warn"><strong>Next step:</strong> please get in touch with your HR team and let them know you’ve signed up, so they can make sure you’re added.</p>
         </div>
 
         <div class="m12-card m12-card--inline m12-success" id="m12-success" hidden>

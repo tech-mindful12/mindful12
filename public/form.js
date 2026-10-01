@@ -16,7 +16,7 @@
     redirect: $('m12-redirect'), redirectEmail: $('redirect-email'), redirectCount: $('redirect-count'), redirectNow: $('redirect-now'),
     redirectCountLine: $('redirect-count-line'), redirectWait: $('redirect-wait'), redirectSlow: $('redirect-slow'),
     progress: $('redirect-progress'), progressFill: $('redirect-progress-fill'), progressLabel: $('redirect-progress-label'),
-    review: $('m12-review'), emailNotice: $('email-notice'), passcode: $('passcode'), readyIntro: $('ready-intro'),
+    emailNotice: $('email-notice'), passcode: $('passcode'), readyIntro: $('ready-intro'),
     companyField: $('company-field'), companyOptional: $('company-optional'), companyHelp: $('company-help'),
     context: $('m12-context'), contextText: $('context-text'), contextChange: $('context-change'),
     chooser: $('context-chooser'), options: $('context-options'), confirm: $('context-confirm'), cancel: $('context-cancel'),
@@ -321,9 +321,10 @@
   els.email.addEventListener('input', function () { debounce('email', checkEmailDomain, 500); });
 
   /**
-   * Employees + execs: the email has to be on their company's domain to be added automatically,
-   * unless they know the company's passcode. Warn as soon as we can tell it isn't and reveal the
-   * passcode field, so they can switch to a work address, enter the passcode, or know what to expect.
+   * Employees + execs: the email has to be on their company's domain, or they need the company's
+   * passcode — there is no other way through. Warn as soon as we can tell it isn't and reveal the
+   * passcode field, so they can switch to a work address or enter the passcode. Submit is blocked
+   * until one of those is true (validate() here, and the server says the same with a 422).
    */
   function needsDomainCheck() { return els.previewType.value === 'employee' || els.previewType.value === 'executive'; }
 
@@ -426,6 +427,7 @@
     if (digits.length && digits.length < 10) errors.phone = 'Enter a valid phone number, or leave it blank';
     if (!els.state.value) errors.state = 'Select a state';
     if (!els.city.value.trim()) errors.city = 'Enter your city';
+    if (els.emailNotice && !els.emailNotice.hidden && els.passcode && !els.passcode.value.trim()) errors.passcode = 'Enter your company’s passcode to continue';
     ['company_name', 'email', 'full_name', 'phone', 'state', 'city', 'passcode'].forEach(function (f) { setError(f, errors[f] || ''); });
     return errors;
   }
@@ -433,6 +435,8 @@
   ['email', 'full_name', 'phone'].forEach(function (f) {
     $(f).addEventListener('input', function () { setError(f, ''); });
   });
+  if (els.passcode) els.passcode.addEventListener('input', function () { setError('passcode', ''); });
+  els.company.addEventListener('input', function () { setError('company_name', ''); });
 
   form.addEventListener('submit', function (e) {
     e.preventDefault();
@@ -471,6 +475,8 @@
       .then(function (r) { return r.json().then(function (j) { return { status: r.status, body: j }; }); })
       .then(function (res) {
         if (res.status === 422 && res.body.errors) {
+          // The passcode field lives inside the notice; if the server wants it, make sure it's showing.
+          if (res.body.errors.passcode && els.emailNotice) setNotice(true);
           Object.keys(res.body.errors).forEach(function (f) { setError(f, res.body.errors[f]); });
           throw new Error('validation');
         }
@@ -485,14 +491,12 @@
 
   function onSuccess(body) {
     if (window.parent !== window) {
-      window.parent.postMessage({ type: 'mindful12:submitted', id: body.id, matched_company: body.matched_company, under_review: body.under_review }, '*');
+      window.parent.postMessage({ type: 'mindful12:submitted', id: body.id, matched_company: body.matched_company }, '*');
     }
     form.hidden = true;
     // On the walkthrough the form sits under "You're Ready to Begin" — that intro is part of the
     // form, so it goes away with it and the outcome card stands alone.
     if (els.readyIntro) els.readyIntro.hidden = true;
-    // Employee without a verified company email: not added automatically, no web-app redirect.
-    if (body.under_review && els.review) { els.review.hidden = false; postHeight(); return; }
     // Nobody moves until GHL has filled in this contact's private channel link. We wait for it
     // (the card explains the next step meanwhile) and never fall back to another destination.
     if (body.wait_token && els.redirect) return showRedirectNotice(body.wait_token);
