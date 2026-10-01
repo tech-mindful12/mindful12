@@ -26,11 +26,13 @@ Two jobs:
 | `m12_welcome_off` | localStorage | they clicked "Don't show this again" — never again on this device |
 | `m12_welcome_first` | localStorage | when they first saw it, for `retireAfterDays` |
 
-It stays quiet on password/login routes, on the magic-link landing URL (the portal is about to route
-them onward — showing there would spend the once-per-session popup before they reach the community),
-and on `/home` when the redirect is about to move them. **"Don't show this again" is the only thing
-that sets the permanent flag** — closing normally, Escape and backdrop clicks all leave it on for
-next time.
+**It only appears on `/communities/groups/*`.** Everything before that — the magic-link URL, whatever
+interim screen the portal shows, the dashboard — is somewhere people are passing through, and the
+redirect wipes anything shown there while still spending the once-per-session flag, so the popup
+would never be seen. Scoping it to the destination is what makes it reliable.
+
+**"Don't show this again" is the only thing that sets the permanent flag** — closing normally,
+Escape and backdrop clicks all leave it on for next time.
 
 `retireAfterDays` (default 8) stops it on its own, so nobody in week three is still being told their
 first challenge arrives Tuesday.

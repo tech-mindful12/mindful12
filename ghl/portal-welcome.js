@@ -29,6 +29,7 @@
     debug: false,
 
     welcome: {
+      // The popup only appears on groupPath and anything under it (/communities/groups/*).
       title: 'Welcome to Mindful 12',
       lines: [
         'Your first challenge arrives Tuesday.',
@@ -50,6 +51,7 @@
 
   function log(msg) { if (CONFIG.debug) console.log('[m12] ' + msg); }
   function path() { return location.pathname.replace(/\/+$/, '') || '/'; }
+  function atDestination(p) { return p.indexOf(CONFIG.groupPath.replace(/\/+$/, '')) === 0; }
 
   // Storage throws in some private-browsing modes, so every call is guarded.
   function read(store, key) { try { return window[store].getItem(key); } catch (e) { return null; } }
@@ -123,16 +125,10 @@
     if (read('sessionStorage', KEY_SHOWN) === '1') return false; // already seen this login
     if (openEl) return false;
 
-    // Mid-signup pages aren't the moment for it.
-    var p = path();
-    if (/password|login|sign-?in/i.test(p)) return false;
-
-    // The magic-link URL is a staging post, not a destination — the portal is about to route them
-    // onward. Showing here would spend the once-per-session popup before they reach the community.
-    if (/[?&]token=/.test(location.search) && p.indexOf(CONFIG.groupPath) !== 0) return false;
-
-    // Don't flash it on /home when the redirect below is about to move them anyway.
-    if (p === '/home' && (CONFIG.mode === 'always' || hasOnboardingFlag())) return false;
+    // Only inside the community. Everything before it — the magic-link URL, whatever interim screen
+    // the portal shows, the dashboard — is somewhere they're passing through, and the redirect would
+    // wipe the popup there while still spending the once-per-session flag.
+    if (!atDestination(path())) return false;
 
     var first = Number(read('localStorage', KEY_FIRST_SEEN) || 0);
     if (first && (Date.now() - first) / 86400000 > CONFIG.welcome.retireAfterDays) {
@@ -249,6 +245,12 @@
         log('redirecting to ' + CONFIG.groupPath);
         location.replace(CONFIG.groupPath);
         return;
+      }
+
+      // Landed in the community, however they got here — nothing left to redirect.
+      if (atDestination(p) && hasOnboardingFlag()) {
+        drop('sessionStorage', KEY_ONBOARDING);
+        log('destination reached, onboarding flag cleared');
       }
     }
     maybeShow();
