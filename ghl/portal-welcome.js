@@ -30,17 +30,34 @@
 
     welcome: {
       // The popup only appears on groupPath and anything under it (/communities/groups/*).
-      title: 'Welcome to Mindful 12',
-      lines: [
-        'Your first challenge arrives Tuesday.',
-        'We’ve sent you an email with the steps between now and then — it’s in your inbox whenever you’re ready.',
-        'While you’re here, say hello in the community and see what others are saying.',
-      ],
-      cta: 'Say hello',
-      optOut: 'Don’t show this again',
       // Stop showing it this many days after the person first saw it, so nobody in week three
       // is still being told their first challenge arrives Tuesday.
       retireAfterDays: 8,
+
+      // Copy per preview type. Employees land in a group full of colleagues, so the community is
+      // the pull. Executives and independents don't know anybody in there yet — for them the
+      // introduction (via the email) is the thing worth doing, so the popup points at the inbox.
+      byType: {
+        employee: {
+          title: 'Welcome to Mindful 12',
+          lines: [
+            'You’re registered, and your first challenge arrives Tuesday.',
+            'We’ve sent you an email with the steps between now and then — it’s in your inbox whenever you’re ready.',
+            'While you’re here, say hello in the community and see what others are saying.',
+          ],
+          cta: 'Say hello',
+        },
+        // executive, independent, hr, and anyone we can't identify.
+        default: {
+          title: 'Welcome to Mindful 12',
+          lines: [
+            'Your place is confirmed, and your first challenge arrives Tuesday.',
+            'We’ve sent you an email that explains what’s ahead — and gives you something you can read today, in about two minutes.',
+            'Head to your inbox when you’re ready. That’s your only next step.',
+          ],
+          cta: 'Got it',
+        },
+      },
     },
   };
 
@@ -49,6 +66,42 @@
   var KEY_SHOWN = 'm12_welcome_shown';        // session — already shown this login
   var KEY_OFF = 'm12_welcome_off';            // local   — they clicked "Don't show this again"
   var KEY_FIRST_SEEN = 'm12_welcome_first';   // local   — when they first saw it (for retireAfterDays)
+  var KEY_TYPE = 'm12_preview_type';          // local   — remembered so later logins still get their copy
+
+  var TYPES = ['executive', 'employee', 'hr', 'independent'];
+
+  function cleanType(value) {
+    var v = String(value == null ? '' : value).trim().toLowerCase();
+    if (!v || v.indexOf('{{') === 0) return '';   // an unrendered merge field is not an answer
+    return TYPES.indexOf(v) === -1 ? '' : v;
+  }
+
+  /**
+   * Which preview someone signed up through. The portal doesn't tell us, so it arrives one of
+   * three ways, best first:
+   *   1. window.M12_PREVIEW_TYPE — set from {{contact.preview_type}} in the portal's custom code,
+   *      if GHL renders merge fields there. Works on every login.
+   *   2. ?m12_type= on the magic-link URL — the signup form appends it when it redirects here.
+   *      Only present on that first arrival, so we remember it.
+   *   3. Whatever we remembered from an earlier login on this device.
+   */
+  function previewType() {
+    var found = cleanType(window.M12_PREVIEW_TYPE);
+    if (!found) {
+      var qs = new URLSearchParams(location.search);
+      found = cleanType(qs.get('m12_type') || qs.get('preview_type'));
+    }
+    if (found) {
+      write('localStorage', KEY_TYPE, found);
+      return found;
+    }
+    return cleanType(read('localStorage', KEY_TYPE));
+  }
+
+  function welcomeCopy() {
+    var byType = CONFIG.welcome.byType;
+    return byType[previewType()] || byType.default;
+  }
 
   function log(msg) { if (CONFIG.debug) console.log('[m12] ' + msg); }
   function path() { return location.pathname.replace(/\/+$/, '') || '/'; }
@@ -74,6 +127,9 @@
     setOnboardingFlag();
     log('magic link token seen, onboarding flag set');
   }
+
+  // The preview type rides in on that same URL, which the portal routes away from — read it now.
+  previewType();
 
   // ---------------------------------------------------------------- welcome popup
 
@@ -176,7 +232,8 @@
     injectStyle();
     lastFocused = document.activeElement;
 
-    var w = CONFIG.welcome;
+    var w = welcomeCopy();
+    log('welcome copy for ' + (previewType() || 'unknown type'));
     var wrap = document.createElement('div');
     wrap.className = 'm12-wm';
     wrap.setAttribute('role', 'dialog');
