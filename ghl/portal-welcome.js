@@ -58,6 +58,13 @@
   function write(store, key, value) { try { window[store].setItem(key, value); } catch (e) {} }
   function drop(store, key) { try { window[store].removeItem(key); } catch (e) {} }
 
+  // Missing, empty or junk all mean "no first sighting on record", which is why the retire window
+  // is skipped rather than treated as "seen in 1970".
+  function firstSeen() {
+    var raw = Number(read('localStorage', KEY_FIRST_SEEN));
+    return isFinite(raw) && raw > 0 ? raw : 0;
+  }
+
   function setOnboardingFlag() { write('sessionStorage', KEY_ONBOARDING, '1'); }
   function hasOnboardingFlag() { return read('sessionStorage', KEY_ONBOARDING) === '1'; }
 
@@ -130,7 +137,7 @@
     // wipe the popup there while still spending the once-per-session flag.
     if (!atDestination(path())) return false;
 
-    var first = Number(read('localStorage', KEY_FIRST_SEEN) || 0);
+    var first = firstSeen();
     if (first && (Date.now() - first) / 86400000 > CONFIG.welcome.retireAfterDays) {
       log('welcome retired (older than ' + CONFIG.welcome.retireAfterDays + ' days)');
       return false;
@@ -220,7 +227,7 @@
     try { cta.focus({ preventScroll: true }); } catch (e) { cta.focus(); }
 
     write('sessionStorage', KEY_SHOWN, '1');
-    if (!read('localStorage', KEY_FIRST_SEEN)) write('localStorage', KEY_FIRST_SEEN, String(Date.now()));
+    if (!firstSeen()) write('localStorage', KEY_FIRST_SEEN, String(Date.now()));
     log('welcome shown');
   }
 
