@@ -511,6 +511,23 @@
     try { window.top.location.href = url; } catch (e) { window.location.href = url; }
   }
 
+  /**
+   * The portal can't see which preview someone signed up through, and its welcome popup needs it
+   * to pick the right copy. The magic link is the one moment we can tell it, so tag the URL on the
+   * way out. Only ever adds a parameter — the token and everything else are left alone.
+   */
+  function withPreviewType(url) {
+    var type = els.previewType.value;
+    if (!type) return url;
+    try {
+      var u = new URL(url);
+      if (!u.searchParams.get('m12_type')) u.searchParams.set('m12_type', type);
+      return u.toString();
+    } catch (e) {
+      return url;   // not a URL we can parse: send them to it untouched
+    }
+  }
+
   var REDIRECT_DELAY_S = 30;
   var POLL_FAST_MS = 2000, POLL_SLOW_MS = 5000, POLL_SLOW_AFTER_MS = 30000, POLL_GIVE_UP_MS = 5 * 60 * 1000;
 
@@ -589,7 +606,7 @@
     setProgress(100, 'Your account is ready');
     // The line above the button has been saying "please wait" — don't leave it there once it's done.
     if (els.redirectStatus) els.redirectStatus.textContent = 'Your account is ready';
-    setTimeout(function () { startCountdown(url); }, 600);
+    setTimeout(function () { startCountdown(withPreviewType(url)); }, 600);
   }
 
   /** Link is ready: reveal the button and send them on, or sooner if they click. */
